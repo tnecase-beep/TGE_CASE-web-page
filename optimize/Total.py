@@ -1651,20 +1651,26 @@ co2_pct = positive_input("CO₂ Reduction Target (%)", 50.0) / 100
 
 # In Gamification Mode we always run the parametric MASTER model.
 # Model selection has no effect there, so we hide the selector.
-if mode == "Gamification Mode":
-    model_choice = "Scenario 2 – Allow New Facilities"
-else:
-    model_choice = st.selectbox(
-        "Optimization model:",
-        ["Scenario 1  – Existing Facilities Only", "Scenario 2 – Allow New Facilities"]
-    )
+MODEL_LABEL_TO_ID = {
+    "Scenario 1 – Existing Facilities Only (SC1F)": "SC1F",
+    "Scenario 2 – Allow New Facilities (SC2F)": "SC2F",
+}
 
+if mode == "Gamification Mode":
+    model_choice_label = "Scenario 2 – Allow New Facilities (SC2F)"
+    model_id = "SC2F"
+else:
+    model_choice_label = st.selectbox(
+        "Optimization model:",
+        list(MODEL_LABEL_TO_ID.keys()),
+    )
+    model_id = MODEL_LABEL_TO_ID.get(model_choice_label, "SC2F")
 # Base sourcing costs (same as MASTER defaults)
 BASE_SOURCING_COST = {"Taiwan": 3.343692308, "Shanghai": 3.423384615}
 
 # Expose sourcing-cost multiplier and EU carbon price only for SC2F in Normal Mode.
 # (Gamification Mode keeps MASTER defaults and does not expose these controls.)
-if (mode == "Normal Mode") and ("SC2F" in model_choice):
+if (mode == "Normal Mode") and (model_id == "SC2F"):
     sourcing_cost_multiplier_pct = st.slider(
         "Sourcing Cost Multiplier for Asian facilites (%)",
         min_value=50,
@@ -1694,7 +1700,7 @@ if "service_level" not in st.session_state:
 
 
 # Only let user edit it in Normal Mode + SC1F (your requirement)
-if (mode == "Normal Mode") and ("SC1F" in model_choice):
+if (mode == "Normal Mode") and (model_id == "SC1F"):
     st.session_state["service_level"] = st.slider(
         "Service Level",
         min_value=0.50,
@@ -1765,7 +1771,7 @@ if st.button("Run Optimization"):
                     # Use the same CO₂ price the user entered
                     # - SC1F seçiliyse: co2_cost_per_ton var
                     # - SC2F seçiliyse: co2_cost_per_ton_New var
-                    bench_co2_new      = co2_cost_per_ton_New if "SC2F" in model_choice else co2_cost_per_ton
+                    bench_co2_new      = co2_cost_per_ton_New if model_id == "SC2F" else co2_cost_per_ton
                 
                     bench_kwargs = dict(
                         CO_2_percentage=co2_pct,
@@ -1791,7 +1797,7 @@ if st.button("Run Optimization"):
                 
                 
 
-            elif "SC1F" in model_choice:
+            elif model_id == "SC1F":
                 # Existing facilities only
                 sc1_kwargs = dict(
                     CO_2_percentage=co2_pct,
@@ -2184,7 +2190,7 @@ if st.button("Run Optimization"):
                     # --------------------------------------------------
                     # CHOOSE CORRECT FALLBACK MODEL
                     # --------------------------------------------------
-                    if "SC2F" in model_choice:
+                    if model_id == "SC2F":
                         from Scenario_Setting_For_SC2F_uns import run_scenario as run_Uns
                         results_uns, model_uns = run_Uns(
                             CO_2_percentage=co2_pct,
