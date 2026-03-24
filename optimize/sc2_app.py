@@ -462,7 +462,7 @@ def run_sc2():
     col1.metric("Total Cost (€)", f"{closest['Objective_value']:,.0f}")
     col2.metric("Total CO₂", f"{closest['CO2_Total']:,.2f}")
     col3.metric("Inventory Total (€)", f"{closest[['Inventory_L1','Inventory_L2','Inventory_L3']].sum():,.0f}")
-    col4.metric("Transport Total (€)", f"{closest[['Transport_L1','Transport_L2','Transport_L3']].sum():,.0f}")
+    col4.metric("Transport Total (€)", f"{(closest[['Transport_L1','Transport_L2','Transport_L3']].sum() + closest.get('Transport_L2_new', 0) + (6.25 * float(closest.get('Satisfied_Demand_units', 0)))):,.0f}")
 
 
     # ----------------------------------------------------
@@ -594,7 +594,7 @@ def run_sc2():
     cost_metric_map = {
         "Total Cost (€)": "Objective_value",
         "Inventory Cost (€)": ["Inventory_L1", "Inventory_L2", "Inventory_L3"],
-        "Transport Cost (€)": ["Transport_L1", "Transport_L2", "Transport_L3"],
+        "Transport Cost (€)": ["Transport_L1", "Transport_L2", "Transport_L2_new", "Transport_L3"],
     }
     
     selected_metric_label = st.selectbox(
@@ -608,6 +608,8 @@ def run_sc2():
     filtered = pool.copy()
     if isinstance(cost_metric_map[selected_metric_label], list):
         filtered["Selected_Cost"] = filtered[cost_metric_map[selected_metric_label]].sum(axis=1)
+        if selected_metric_label == "Transport Cost (€)":
+            filtered["Selected_Cost"] += 6.25 * pd.to_numeric(filtered["Satisfied_Demand_units"], errors="coerce").fillna(0)
         y_label = selected_metric_label
     else:
         filtered["Selected_Cost"] = filtered[cost_metric_map[selected_metric_label]]
@@ -1029,6 +1031,7 @@ def run_sc2():
             + closest.get("Transport_L2", 0)
             + closest.get("Transport_L2_new", 0)
             + closest.get("Transport_L3", 0)
+            + (6.25 * float(closest.get("Satisfied_Demand_units", 0)))
         )
     
         sourcing_handling_cost = (
