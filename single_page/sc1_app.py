@@ -487,9 +487,9 @@ def run_sc1():
     # Transport
     tr_layer_cols = [c for c in ["Transport_L1", "Transport_L2", "Transport_L3"] if c in closest.index]
     if tr_layer_cols:
-        tr_total = float(closest[tr_layer_cols].sum())
+        tr_total = float(closest[tr_layer_cols].sum()) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0))))
     elif "Transportation Cost" in closest.index:
-        tr_total = float(closest["Transportation Cost"])
+        tr_total = float(closest["Transportation Cost"]) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0))))
     else:
         tr_total = None
     
@@ -606,6 +606,11 @@ def run_sc1():
         cols_to_sum = [c for c in metric_cols if c in filtered.columns]
         if cols_to_sum:
             filtered["Selected_Cost"] = filtered[cols_to_sum].sum(axis=1)
+            if selected_metric_label.startswith("Transport Cost"):
+                filtered["Selected_Cost"] += 6.25 * pd.to_numeric(
+                    filtered["Satisfied_Demand_units"] if "Satisfied_Demand_units" in filtered.columns else filtered["DemandFulfillment"],
+                    errors="coerce"
+                ).fillna(0)
         else:
             st.warning(f"⚠️ Could not find any columns for {selected_metric_label}.")
             st.stop()
@@ -965,7 +970,7 @@ def run_sc1():
         st.subheader("Cost Distribution")
     
         cost_components = {
-            "Transportation Cost": closest.get("Transportation Cost", 0),
+            "Transportation Cost": closest.get("Transportation Cost", 0) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))),
             "Sourcing/Handling Cost": closest.get("Sourcing/Handling Cost", 0),
             "CO₂ Cost in Production": closest.get("CO2 Cost in Production", 0),
             "Inventory Cost": closest.get("Transit Inventory Cost", 0),
@@ -1086,4 +1091,3 @@ def run_sc1():
     # ----------------------------------------------------
     with st.expander("📄 Show Full Data Table"):
         st.dataframe(df.head(500), use_container_width=True)
-
