@@ -20,7 +20,8 @@ from helpers import print_flows, print_mode_breakdown, compute_inventory_cost, c
 import time
 import json
 import streamlit.components.v1 as components
-
+import io
+import contextlib
 
 
 GA_MEASUREMENT_ID = "G-3H3B3BNF4Z"
@@ -68,10 +69,10 @@ def run_scenario(
         }
     
     if dc_capacity is None:
-        dc_capacity = {"Pardubice": 45000, "Calais": 150000, "Riga": 75000, "LaGomera": 100000}
+        dc_capacity = {"Pardubice": 45000, "Calais": 150000, "Riga": 75000, "Algeciras": 100000}
     
     if handling_dc is None:
-        handling_dc = {"Pardubice": 4.768269231, "Calais": 5.675923077, "Riga": 4.426038462, "LaGomera": 7.0865}
+        handling_dc = {"Pardubice": 4.768269231, "Calais": 5.675923077, "Riga": 4.426038462, "Algeciras": 7.0865}
     
     if handling_crossdock is None:
         handling_crossdock = {"Vienna": 6.533884615, "Gdansk": 4.302269231, "Paris": 5.675923077}
@@ -124,10 +125,7 @@ def run_scenario(
     data["h (€/unit)"] = [0.85, 0.85, 0.85]
     
     # LT (days)
-    data["LT (days)"] = [
-        np.round((average_distance * (1.2 if m == "Water" else 1)) / (speed[m] * 24), 13)
-        for m in speed
-    ]    
+    data["LT (days)"] = [0.5, 48, 10 ]    
     # Z-scores and Densities
     z_values = [norm.ppf(α) for α in service_level.values()]
     phi_values = [norm.pdf(z) for z in z_values]
@@ -147,7 +145,7 @@ def run_scenario(
     Plants = ["Taiwan", "Shanghai"]
     Crossdocks = ["Vienna", "Gdansk", "Paris"]
     New_Locs = ["Budapest", "Prague", "Cork", "Helsinki", "Warsaw"]
-    Dcs = ["Pardubice", "Calais", "Riga", "LaGomera"]
+    Dcs = ["Pardubice", "Calais", "Riga", "Algeciras"]
     Retailers = list(demand.keys())
     product_weight_ton = product_weight / 1000.0
     
@@ -174,7 +172,7 @@ def run_scenario(
          [519.161031102087, 1154.87176862626, 440.338211856603, 1855.94939751482],
          [962.668288266132, 149.819604703365, 1675.455462176, 2091.1437090641]],
         index=["Vienna","Gdansk","Paris"],
-        columns=["Pardubice","Calais","Riga","LaGomera"]
+        columns=["Pardubice","Calais","Riga","Algeciras"]
     )
     
     
@@ -183,7 +181,7 @@ def run_scenario(
          [311.994969562194, 172.326685809878, 622.433010022067, 1497.40239816531, 1387.73696467636, 1585.6370207201, 1984.31926933368],
          [1702.34810062205, 1664.62283033352, 942.985120680279, 222.318687415142, 2939.50970842422, 3128.54724287652, 713.715034612432],
          [2452.23922908608, 2048.41487682505, 2022.91355628344, 1874.11994156457, 2774.73634842816, 2848.65086298747, 2806.05576441898]],
-        index=["Pardubice","Calais","Riga","LaGomera"],
+        index=["Pardubice","Calais","Riga","Algeciras"],
         columns=["Cologne","Antwerp","Krakow","Kaunas","Oslo","Dublin","Stockholm"]
     )
     
@@ -568,6 +566,26 @@ def run_scenario(
     return results, model
 
 
+
+def _run_scenario_uns_fallback(**kwargs):
+    """
+    Fallback runner for SC1F scenarios:
+    - Imports Scenario_Setting_For_SC1F_uns.py (UNS model with unmet demand allowed)
+    - Solves the scenario and returns (results, model)
+    - Silences stdout to keep simulation logs readable
+    """
+    try:
+        import Scenario_Setting_For_SC1F_uns as sc1f_uns
+    except Exception as e:
+        raise ImportError(
+            "Scenario_Setting_For_SC1F_uns.py could not be imported. "
+            "Place it in the same folder as this file or ensure it's on PYTHONPATH."
+        ) from e
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        return sc1f_uns.run_scenario(**kwargs)
+
 def extract_var_values(model):
 
     var_data = []
@@ -601,7 +619,7 @@ def simulate_scenarios_full():
         co2_values = [1 * i / 100 for i in range(0, 100)]
         product_weights = [2.58]
         CO_2_CostsAtMfg = [37.50]
-        service_levels = [10*i/100 for i in range(5, 10)]
+        service_levels = [0.90]
         
         
         scenario_counter = 0
@@ -610,8 +628,11 @@ def simulate_scenarios_full():
             for w in product_weights:
                 for co2_cost in CO_2_CostsAtMfg:
                     for service_level in service_levels:
+                        scenario_counter += 1
                         start = time.time()
+                        used_uns_fallback = False
 
+                        # 1) Try the original SC1F model (full demand satisfaction)
                         try:
                             results, model = run_scenario(
                                 demand=scaled_demand,
@@ -622,19 +643,42 @@ def simulate_scenarios_full():
                                 print_results="NO"
                             )
 
-                            # Check feasibility before using results
                             if model.Status != GRB.OPTIMAL:
-                                print(f"⚠️ Infeasible or non-optimal solution at {int(level*100)}% demand, CO2={co2_pct:.2f}")
+                                raise RuntimeError(f"Non-optimal status: {model.Status}")
+
+                        # 2) If infeasible/non-optimal, fall back to UNS model (max satisfiable demand)
+                        except Exception as e:
+                            used_uns_fallback = True
+                            try:
+                                results, model = _run_scenario_uns_fallback(
+                                    demand=scaled_demand,
+                                    CO_2_percentage=co2_pct,
+                                    product_weight=w,
+                                    co2_cost_per_ton=co2_cost,
+                                    service_level=service_level,
+                                    print_results="NO"
+                                )
+
+                                if model.Status != GRB.OPTIMAL:
+                                    raise RuntimeError(f"UNS non-optimal status: {model.Status}")
+
+                            except Exception as e2:
+                                print(
+                                    f"❌ Error at {int(level*100)}% demand, CO2={co2_pct:.2f}, SL={service_level:.2f}: "
+                                    f"base failed ({e}) and UNS fallback failed ({e2})"
+                                )
                                 continue
 
-                        except Exception as e:
-                            print(f"❌ Error at {int(level*100)}% demand, CO2={co2_pct:.2f}: {e}")
-                            continue
-
                         runtime = time.time() - start
-                        scenario_counter += 1
 
                         flat_vars = {v.VarName: v.X for v in model.getVars()}
+
+                        # --- Demand satisfaction metrics (works for both base and UNS fallback) ---
+                        # We define "satisfied demand" as the total delivered units to retailers (sum of all f3 flows).
+                        delivered_units = sum(val for name, val in flat_vars.items() if name.startswith("f3["))
+                        total_demand_units = sum(scaled_demand.values())
+                        satisfied_pct = (delivered_units / total_demand_units) if total_demand_units else 0.0
+                        unmet_units = total_demand_units - delivered_units
 
                         run_record = {
                             "Scenario_ID": scenario_counter,
@@ -645,15 +689,19 @@ def simulate_scenarios_full():
                             "Runtime_sec": round(runtime, 2),
                             "Demand_Level": level,
                             **results,
-                            **flat_vars
+                            **flat_vars,
+                            "Used_UNS_Fallback": used_uns_fallback,
+                            "Satisfied_Demand_units": delivered_units,
+                            "Satisfied_Demand_pct": satisfied_pct,
+                            "Unmet_Demand_units": unmet_units,
                         }
 
                         results_summary.append(run_record)
                         key = (round(co2_pct, 3), round(w, 3), round(co2_cost, 3), round(service_level, 3), round(level, 3))
                         json_dict[str(key)] = run_record
 
-                        print(f"✅ Done: Demand={int(level*100)}%, CO2={co2_pct:.2f}, Obj={results.get('Objective_value', 0):.2f}")
-
+                        suffix = " (UNS)" if used_uns_fallback else ""
+                        print(f"✅ Done{suffix}: Demand={int(level*100)}%, CO2={co2_pct:.2f}, SL={service_level:.2f}, Obj={run_record.get('Objective_value', 0):.2f}")
         if not results_summary:
             print(f"⚠️ No feasible results found for {int(level*100)}% demand. Skipping sheet.")
             continue

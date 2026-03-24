@@ -104,10 +104,7 @@ def run_scenario(
     data["h (€/unit)"] = [0.85, 0.85, 0.85]
     
     # LT (days)
-    data["LT (days)"] = [
-        np.round((average_distance * (1.2 if m == "sea" else 1)) / (speed[m] * 24), 13)
-        for m in speed
-    ]    
+    data["LT (days)"] = [0.5, 48, 10 ]    
     # Z-scores and Densities
     z_values = [norm.ppf(α) for α in service_level.values()]
     phi_values = [norm.pdf(z) for z in z_values]

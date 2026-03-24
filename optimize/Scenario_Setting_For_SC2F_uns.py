@@ -55,10 +55,10 @@ def run_scenario(
         }
     
     if dc_capacity is None:
-        dc_capacity = {"Pardubice": 45000, "Calais": 150000, "Riga": 75000, "LaGomera": 100000}
+        dc_capacity = {"Pardubice": 45000, "Calais": 150000, "Riga": 75000, "Algeciras": 100000}
     
     if handling_dc is None:
-        handling_dc = {"Pardubice": 4.768269231, "Calais": 5.675923077, "Riga": 4.426038462, "LaGomera": 7.0865}
+        handling_dc = {"Pardubice": 4.768269231, "Calais": 5.675923077, "Riga": 4.426038462, "Algeciras": 7.0865}
     
     if handling_crossdock is None:
         handling_crossdock = {"Vienna": 6.533884615,
@@ -109,10 +109,7 @@ def run_scenario(
     data["h (€/unit)"] = [0.85, 0.85, 0.85]
     
     # LT (days)
-    data["LT (days)"] = [
-        np.round((average_distance * (1.2 if m == "Water" else 1)) / (speed[m] * 24), 13)
-        for m in speed
-    ]    
+    data["LT (days)"] = [0.5, 48, 10 ]    
     # Z-scores and Densities
     z_values = [norm.ppf(α) for α in service_level.values()]
     phi_values = [norm.pdf(z) for z in z_values]
@@ -132,7 +129,7 @@ def run_scenario(
     Plants = ["Taiwan", "Shanghai"]
     Crossdocks = ["Vienna", "Gdansk", "Paris"]
     New_Locs = ["Budapest", "Prague", "Cork", "Helsinki", "Warsaw"]
-    Dcs = ["Pardubice", "Calais", "Riga", "LaGomera"]
+    Dcs = ["Pardubice", "Calais", "Riga", "Algeciras"]
     Retailers = list(demand.keys())
     product_weight_ton = product_weight / 1000.0
     
@@ -165,7 +162,7 @@ def run_scenario(
          [519.161031102087, 1154.87176862626, 440.338211856603, 1855.94939751482],
          [962.668288266132, 149.819604703365, 1675.455462176, 2091.1437090641]],
         index=["Vienna","Gdansk","Paris"],
-        columns=["Pardubice","Calais","Riga","LaGomera"]
+        columns=["Pardubice","Calais","Riga","Algeciras"]
     )
     
     dist2_2 = pd.DataFrame([[367.762425639798, 1216.10262027458, 1098.57245368619, 1120.13248546123],
@@ -174,7 +171,7 @@ def run_scenario(
                             [1265.72892702748, 1758.18103997611, 367.698822815676, 2461.59771450036],
                             [437.686419974076, 1271.77800922148, 554.373376462774, 1592.14058614186]],
                            index=["Budapest", "Prague", "Cork", "Helsinki", "Warsaw"],
-                           columns = ["Pardubice","Calais","Riga","LaGomera"]
+                           columns = ["Pardubice","Calais","Riga","Algeciras"]
                            )
     
     dist3 = pd.DataFrame(
@@ -182,7 +179,7 @@ def run_scenario(
          [311.994969562194, 172.326685809878, 622.433010022067, 1497.40239816531, 1387.73696467636, 1585.6370207201, 1984.31926933368],
          [1702.34810062205, 1664.62283033352, 942.985120680279, 222.318687415142, 2939.50970842422, 3128.54724287652, 713.715034612432],
          [2452.23922908608, 2048.41487682505, 2022.91355628344, 1874.11994156457, 2774.73634842816, 2848.65086298747, 2806.05576441898]],
-        index=["Pardubice","Calais","Riga","LaGomera"],
+        index=["Pardubice","Calais","Riga","Algeciras"],
         columns=["Cologne","Antwerp","Krakow","Kaunas","Oslo","Dublin","Stockholm"]
     )
     

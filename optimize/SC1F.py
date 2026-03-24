@@ -107,9 +107,11 @@ def run_scenario(
     
     # LT (days)
     data["LT (days)"] = [
-        np.round((average_distance * (1.2 if m == "sea" else 1)) / (speed[m] * 24), 13)
-        for m in speed
+        0.5, 48, 10
     ]    
+
+    #LT elle gir dene
+
     # Z-scores and Densities
     z_values = [norm.ppf(α) for α in service_level.values()]
     phi_values = [norm.pdf(z) for z in z_values]
@@ -308,7 +310,7 @@ def run_scenario(
     for mo in ModesL1:
         InvCost_L1[mo] = (
             quicksum(
-                f1[p, c, mo] * df.loc[mo, "LT (days)"] * df.loc[mo, "h (€/unit)"]
+                f1[p, c, mo] * df.loc[mo, "LT (days)"] * df.loc[mo, "h (€/unit)"] #holding cost #
                 for p in Plants for c in Crossdocks
             )
             + quicksum(
@@ -554,6 +556,7 @@ def simulate_scenarios_full():
         json_dict = {}
 
         co2_values = [1 * i / 100 for i in range(0, 100)]
+        
         product_weights = [2.58]
         CO_2_CostsAtMfg = [37.50]
         unit_penaltycost = [1.7]
