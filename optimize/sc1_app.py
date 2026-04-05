@@ -444,11 +444,11 @@ def run_sc1():
             )
     else:
         # Do not block visuals; just inform once
-        st.warning(
+        """st.warning(
             "⚠️ Demand satisfaction metrics are not available in this Excel output for the selected scenario. "
             "Please regenerate/upload results that include UNS metrics. "
             f"Missing columns: {', '.join(missing)}."
-        )
+        )"""
 
 # ----------------------------------------------------
     # KPI SUMMARY
