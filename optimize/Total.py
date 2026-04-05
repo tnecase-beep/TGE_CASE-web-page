@@ -10,7 +10,6 @@ Created on Fri Nov 28 15:50:25 2025
 # ================================================================
 
 import os
-import random
 import re
 import streamlit as st
 import pandas as pd
@@ -19,7 +18,7 @@ import streamlit.components.v1 as components
 import gurobipy as gp
 import inspect
 import numpy as np
-from scipy.stats import norm
+from statistics import NormalDist as _ND; _nd = _ND(); norm = type('norm', (), {'pdf': staticmethod(_nd.pdf), 'ppf': staticmethod(_nd.inv_cdf), 'cdf': staticmethod(_nd.cdf)})()
 from datetime import datetime, timezone
 
 # Puzzle submissions -> SharePoint Excel (implemented in post_data.py)
@@ -84,8 +83,8 @@ with st.sidebar.expander("🏭 Factory Model", expanded=True):
     factory_choice = st.radio(
         "Select model:",
         [
-            "SC1 – Existing Facilities",
-            "SC2 – New Facilities"
+            "Scenario 1: Process Optimization",
+            "Scenario 2: Supply Chain Transformation"
         ],
         index=None,
         key="factory_radio",
@@ -105,11 +104,11 @@ with st.sidebar.expander("📊 Optimization", expanded=True):
 # ================================================================
 # ROUTING LOGIC
 # ================================================================
-if factory_choice == "SC1 – Existing Facilities":
+if factory_choice == "Scenario 1: Process Optimization":
     run_sc1()
     st.stop()
 
-elif factory_choice == "SC2 – New Facilities":
+elif factory_choice == "Scenario 2: Supply Chain Transformation":
     run_sc2()
     st.stop()
 

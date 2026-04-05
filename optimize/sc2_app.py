@@ -10,7 +10,6 @@ import plotly.express as px
 import requests
 from io import BytesIO
 import openpyxl
-import os
 import sys
 from pathlib import Path
 import streamlit.components.v1 as components
@@ -199,7 +198,7 @@ def run_sc2():
     # ----------------------------------------------------
     st.sidebar.header("📦 Demand Level (%)")
     
-    LOCAL_XLSX_PATH = resolve_local_path("single_page", "simulation_results_demand_levelsSC2.xlsx")
+    LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levelsSC2.xlsx")
 
     available_sheets = get_sheet_names(LOCAL_XLSX_PATH)
     
@@ -284,12 +283,12 @@ def run_sc2():
     default_val = 0.0  # (fractional form, 0.0 = 0%)
     
     co2_pct_display = st.sidebar.slider(
-        "CO₂ Reduction Target (%)",
+        "Emission Reduction Target (%)",
         min_value=0,
         max_value=100,
         value=int(default_val * 100),  # ✅ default = 0%
         step=1,
-        help="Set a CO₂ reduction target between 0–100 %.",
+        help="Set a Emission Reduction Target between 0–100 %.",
     )
     
     # Convert displayed percentage back to 0–1 for internal matching
@@ -299,7 +298,7 @@ def run_sc2():
     # 🎯 Carbon price selector (work with either column name)
     co2_cost_options = [20, 40, 60, 80, 100, 1000, 10000, 100000]  # €/ton
     co2_cost = st.sidebar.select_slider(
-        "CO₂ Price in Europe (€ per ton)",
+        "Carbon price in Europe (€ per ton)",
         options=co2_cost_options,
         value=60,
         help="Select the EU carbon price column value."
@@ -468,7 +467,7 @@ def run_sc2():
     # ----------------------------------------------------
     # 🆕 COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
     # ----------------------------------------------------
-    st.markdown("## 💶 Emissions vs Cost ")
+    st.markdown("## 💶 Emissions vs Total Cost ")
 
     @st.cache_data(show_spinner=False)
     def generate_cost_emission_chart_plotly_dynamic(df_sheet: pd.DataFrame, selected_value: float):
@@ -588,7 +587,7 @@ def run_sc2():
     # ----------------------------------------------------
     # COST vs EMISSION SENSITIVITY PLOT
     # ----------------------------------------------------
-    st.markdown("## 📈 CO₂ Emission vs Cost ")
+    st.markdown("## 📈 Emissions vs Cost Elements")
     
     # Let user choose which cost metric to plot
     cost_metric_map = {
@@ -1055,7 +1054,7 @@ def run_sc2():
         cost_parts = {
             "Transportation Cost": transport_cost,
             "Sourcing/Handling Cost": sourcing_handling_cost,
-            "CO₂ Cost in Production": co2_cost_production,
+            "Carbon Cost in Production": co2_cost_production,
             "Inventory Cost": inventory_cost
         }
     

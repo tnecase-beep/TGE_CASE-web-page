@@ -10,7 +10,6 @@ import plotly.express as px
 import requests
 from io import BytesIO
 import re
-import os
 import sys
 from pathlib import Path
 import streamlit.components.v1 as components
@@ -242,20 +241,23 @@ def run_sc1():
     
     
     
-    # 👉 Replace with your GitHub-hosted file URL when public
     GITHUB_XLSX_URL = (
         "https://raw.githubusercontent.com/aydınarda/TGE_CASE-web-page/main/single_page/"
         "simulation_results_demand_levels.xlsx"
     )
-    
+    LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levels.xlsx")
 
     try:
-        excel_data = load_excel_from_github(GITHUB_XLSX_URL)
+        local_path = Path(LOCAL_XLSX_PATH)
+        if local_path.exists():
+            excel_data = pd.read_excel(local_path, sheet_name=None)
+        else:
+            excel_data = load_excel_from_github(GITHUB_XLSX_URL)
         sheet_names = [s for s in excel_data.keys() if s.startswith("Array_")]
         if not sheet_names:
             st.error("❌ No sheets starting with 'Array_' found.")
             st.stop()
-    
+
     except Exception as e:
         st.error(f"❌ Failed to load Excel file: {e}")
         st.stop()
@@ -364,12 +366,12 @@ def run_sc1():
     default_val = 0.0  # (fractional form, 0.0 = 0%)
     
     co2_pct_display = st.sidebar.slider(
-        "CO₂ Reduction Target (%)",
+        "Emission Reduction Target (%)",
         min_value=0,
         max_value=100,
         value=int(default_val * 100),  # ✅ default = 0%
         step=1,
-        help="Set a CO₂ reduction target between 0–100 %.",
+        help="Set a Emission Reduction Target between 0–100 %.",
     )
     
     # Convert displayed percentage back to 0–1 for internal matching
@@ -499,7 +501,7 @@ def run_sc1():
     # ----------------------------------------------------
     # 🆕 COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
     # ----------------------------------------------------
-    st.markdown("## 💶 Emissions vs Cost ")
+    st.markdown("## 💶 Emissions vs Total Cost ")
     
     @st.cache_data(show_spinner=False)
     def generate_cost_emission_chart_plotly_dynamic(df_sheet: pd.DataFrame, selected_value: float):
@@ -576,7 +578,7 @@ def run_sc1():
     # ----------------------------------------------------
     # COST vs EMISSION PLOT
     # ----------------------------------------------------
-    st.markdown("## 📈 CO₂ Emission vs Cost ")
+    st.markdown("## 📈 Emissions vs Cost Elements ")
     
     cost_metric_map = {
         "Total Cost (€)": "Objective_value" if "Objective_value" in df.columns else "Total Cost",
@@ -972,7 +974,7 @@ def run_sc1():
         cost_components = {
             "Transportation Cost": closest.get("Transportation Cost", 0) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))),
             "Sourcing/Handling Cost": closest.get("Sourcing/Handling Cost", 0),
-            "CO₂ Cost in Production": closest.get("CO2 Cost in Production", 0),
+            "Carbon Cost in Production": closest.get("CO2 Cost in Production", 0),
             "Inventory Cost": closest.get("Transit Inventory Cost", 0),
         }
     
