@@ -292,8 +292,12 @@ def run_sc1():
     
     # Load selected sheet
     df = excel_data[selected_sheet].round(2)
+    if isinstance(df, pd.Series):
+        df = df.to_frame().T
+    elif not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
     
-    df_display = df.applymap(lambda x: format_number(x, 0))  # For display purposes only (keep original df for logic)
+    df_display = df.apply(lambda col: col.map(lambda x: format_number(x, 0)))  # For display purposes only (keep original df for logic)
     
     
     # ----------------------------------------------------

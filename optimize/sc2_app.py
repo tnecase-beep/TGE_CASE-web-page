@@ -233,7 +233,12 @@ def run_sc2():
         st.error(f"❌ Failed to load data: {e}")
         st.stop()
         
-    df_display = df.applymap(lambda x: format_number(x, 0))  # For display purposes only (keep original df for logic)
+    if isinstance(df, pd.Series):
+        df = df.to_frame().T
+    elif not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+
+    df_display = df.apply(lambda col: col.map(lambda x: format_number(x, 0)))  # For display purposes only (keep original df for logic)
 
     def format_demand_level(value, fallback_label: str = ""):
         """Return a human-friendly demand level label (e.g., '95%')."""
@@ -455,7 +460,7 @@ def run_sc2():
         cols_to_show = [c for c in closest_df.columns if not (c.lower().startswith("f") or c.lower().startswith("scenario_id"))]
     
         # Display cleaned table
-        st.write(closest_df[cols_to_show].applymap(lambda x: format_number(x, 0)))
+        st.write(closest_df[cols_to_show].apply(lambda col: col.map(lambda x: format_number(x, 0))))
     
     col1, col2, col3, col4 = st.columns(4)
     
