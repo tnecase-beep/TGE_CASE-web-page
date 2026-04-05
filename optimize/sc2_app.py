@@ -442,8 +442,7 @@ def run_sc2():
         )
 
         st.error(
-            f"⚠️ Unsatisfied demand detected: {unmet_units:,.2f} units unmet "
-            f"({sat_pct_disp:.2f}% satisfied)."
+            f"⚠️ Capacity is insufficient; only {sat_pct_disp:.2f}% satisfied on average. You’re losing market share!"
         )
 
     # ----------------------------------------------------
