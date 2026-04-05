@@ -509,7 +509,7 @@ def run_sc1():
         emissions_col = "Total Emissions" if "Total Emissions" in df_sheet.columns else "CO2_Total"
         cost_col = "Total Cost" if "Total Cost" in df_sheet.columns else "Objective_value"
         co2_col = next((c for c in df_sheet.columns if "reduction" in c.lower() or "%" in c.lower()), None)
-        co2_col *=100  # Convert to percentage for display
+        
 
         df_chart = df_sheet[[emissions_col, cost_col, co2_col]].copy().sort_values(by=co2_col)
         df_chart["Emissions (k)"] = df_chart[emissions_col] / 1000
