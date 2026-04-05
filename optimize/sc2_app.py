@@ -196,7 +196,7 @@ def run_sc2():
     # ----------------------------------------------------
     # 📦 DEMAND LEVEL SELECTION
     # ----------------------------------------------------
-    st.sidebar.header("📦 Demand Level (%)")
+    # st.sidebar.header("📦 Demand Level (%)")
     
     LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levelsSC2.xlsx")
 
@@ -207,12 +207,12 @@ def run_sc2():
     if not demand_sheets:
         demand_sheets = available_sheets
     
-    selected_demand = st.sidebar.selectbox(
-        "Demand Level (%)",
-        demand_sheets if demand_sheets else ["Default"],
-        index=0,
-        help="Select which demand level's results to visualize."
-    )
+    # Demand-level UI intentionally hidden; always default to the 100% sheet.
+    selected_demand = next((s for s in demand_sheets if str(s).strip() == "100%"), None)
+    if selected_demand is None:
+        selected_demand = next((s for s in demand_sheets if "100" in str(s)), None)
+    if selected_demand is None:
+        selected_demand = demand_sheets[0] if demand_sheets else "Default"
     
     # ----------------------------------------------------
     # LOAD DATA (local first, then fallback to GitHub)
@@ -384,6 +384,7 @@ def run_sc2():
         st.error(
             "This solution is not feasible- even Swiss precision couldn't optimize it! Please adjust the CO2 target and parameters."
         )
+        fig_sens.update_coloraxes(colorbar=dict(ticksuffix="%"))
         st.stop()
     
     if closest.get("Status", "") not in ["OPTIMAL", 2]:
@@ -615,6 +616,7 @@ def run_sc2():
         y_label = selected_metric_label
     if not filtered.empty:
         # Detect which CO₂ price column exists
+        filtered["CO2 Reduction % Display"] = pd.to_numeric(filtered["CO2_percentage"], errors="coerce") * 100
         if "CO2_CostAtMfg" in filtered.columns:
             price_col = "CO2_CostAtMfg"
         elif "CO2_CostAtEU" in filtered.columns:
@@ -632,12 +634,13 @@ def run_sc2():
             filtered,
             x="CO2_Total",
             y="Selected_Cost",
-            color="CO2_percentage",
+            color="CO2 Reduction % Display",
             hover_data=hover_cols,
             title=f"{selected_metric_label} vs Total CO₂ ({price_col or 'CO₂ price'} = {co2_cost} €/ton)",
             labels={
                 "CO2_Total": "Total CO₂ Emissions (tons)",
-                "Selected_Cost": y_label
+                "Selected_Cost": y_label,
+                "CO2 Reduction % Display": "CO2 Reduction %"
             },
             color_continuous_scale="Viridis",
             template="plotly_white"

@@ -265,7 +265,7 @@ def run_sc1():
     # ----------------------------------------------------
     # SIDEBAR CONTROLS (SC2-style layout)
     # ----------------------------------------------------
-    st.sidebar.header("📦 Demand Level (%)")
+    # st.sidebar.header("📦 Demand Level (%)")
 
     # Extract numeric levels automatically (e.g., Array_90% → 90)
     levels = sorted(
@@ -274,13 +274,12 @@ def run_sc1():
     )
     level_labels = [f"{lvl}%" for lvl in levels]
 
-    # Dropdown to pick demand level (matches SC2 look & feel)
-    selected_level_label = st.sidebar.selectbox(
-        "Demand Level (%)",
-        options=level_labels,
-        index=0,
-        help="Select the demand level whose scenario results you want to visualize."
-    )
+    # Demand-level UI intentionally hidden; always default to the 100% sheet.
+    selected_level_label = next((label for label in level_labels if str(label).strip() == "100%"), None)
+    if selected_level_label is None:
+        selected_level_label = next((label for label in level_labels if "100" in str(label)), None)
+    if selected_level_label is None:
+        selected_level_label = level_labels[0] if level_labels else "100%"
     selected_level = int(str(selected_level_label).replace("%", "").strip())
 
     selected_sheet = f"Array_{selected_level}%"
