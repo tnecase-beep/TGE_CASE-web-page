@@ -441,10 +441,16 @@ def run_sc1():
 
         # Only show a single, clean message (no pop-up)
         if used_uns or unmet_units > 1e-6 or satisfied_pct < 0.999999:
+            sat_pct_disp = max(0.0, min(1.0, satisfied_pct)) * 100.0
+            st.error(
+                f"⚠️ Capacity is insufficient; only {sat_pct_disp:.2f}% satisfied on average. You’re losing market share!"
+            )
+            """
             st.error(
                 f"⚠️ Demand NOT fully satisfied: {satisfied_units:,.0f}/{total_demand_units:,.0f} units "
-                f"({satisfied_pct*100:.2f}%). Unmet: {unmet_units:,.0f}."
+                f""
             )
+            """
     else:
         # Do not block visuals; just inform once
         """st.warning(
