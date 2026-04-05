@@ -397,19 +397,12 @@ def run_sc1():
     # 🚨 DEMAND SATISFACTION CHECK (NO POP-UP)
     #   Note: UNS metrics live in Demand_* sheets (not Array_* sheets).
     # ----------------------------------------------------
-    required_cols = [
-        "Used_UNS_Fallback",
-        "Satisfied_Demand_units",
-        "Satisfied_Demand_pct",
-        "Unmet_Demand_units",
-    ]
-
     # Initialize to avoid UnboundLocalError in every branch
     used_uns = False
     satisfied_units = None
     satisfied_pct = None
     unmet_units = None
-    total_demand_units = None
+    total_demand_units = 111000.0 * (selected_level / 100.0)
 
     # Prefer Demand_* sheet for UNS metrics (Array_* does not contain them)
     demand_sheet = f"Demand_{selected_level}%"
@@ -430,14 +423,37 @@ def run_sc1():
     # Robust to leading/trailing spaces in Excel headers
     _canon = lambda s: str(s).strip()
     available_cols = set(_canon(c) for c in row_for_uns.index)
-    missing = [c for c in required_cols if _canon(c) not in available_cols]
+    has_uns_metrics = any(
+        col in available_cols
+        for col in (
+            "Used_UNS_Fallback",
+            "Satisfied_Demand_units",
+            "Satisfied_Demand_pct",
+            "Unmet_Demand_units",
+        )
+    )
 
-    if not missing:
+    if has_uns_metrics:
         used_uns = _safe_bool(row_for_uns.get("Used_UNS_Fallback", False), False)
-        satisfied_units = _safe_float(row_for_uns.get("Satisfied_Demand_units", 0.0), 0.0)
-        satisfied_pct = _safe_float(row_for_uns.get("Satisfied_Demand_pct", 1.0), 1.0)
-        unmet_units = _safe_float(row_for_uns.get("Unmet_Demand_units", 0.0), 0.0)
-        total_demand_units = satisfied_units + unmet_units
+        satisfied_units = _safe_float(row_for_uns.get("Satisfied_Demand_units", None), None)
+        satisfied_pct = _safe_float(row_for_uns.get("Satisfied_Demand_pct", None), None)
+        unmet_units = _safe_float(row_for_uns.get("Unmet_Demand_units", None), None)
+
+        if satisfied_units is None and satisfied_pct is not None:
+            satisfied_units = total_demand_units * max(0.0, min(1.0, satisfied_pct))
+        if satisfied_pct is None and satisfied_units is not None and total_demand_units > 0:
+            satisfied_pct = satisfied_units / total_demand_units
+        if unmet_units is None and satisfied_units is not None:
+            unmet_units = max(total_demand_units - satisfied_units, 0.0)
+        if satisfied_units is None and unmet_units is not None:
+            satisfied_units = max(total_demand_units - unmet_units, 0.0)
+
+        if satisfied_pct is None:
+            satisfied_pct = 1.0
+        if satisfied_units is None:
+            satisfied_units = total_demand_units
+        if unmet_units is None:
+            unmet_units = max(total_demand_units - satisfied_units, 0.0)
 
         # Only show a single, clean message (no pop-up)
         if used_uns or unmet_units > 1e-6 or satisfied_pct < 0.999999:
@@ -456,7 +472,7 @@ def run_sc1():
         """st.warning(
             "⚠️ Demand satisfaction metrics are not available in this Excel output for the selected scenario. "
             "Please regenerate/upload results that include UNS metrics. "
-            f"Missing columns: {', '.join(missing)}."
+            "No demand satisfaction columns were found for the selected scenario."
         )"""
 
 # ----------------------------------------------------
