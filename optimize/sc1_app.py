@@ -621,17 +621,20 @@ def run_sc1():
         filtered["Selected_Cost"] = filtered[metric_cols]
     
     x_col = "Total Emissions" if "Total Emissions" in filtered.columns else "CO2_Total"
+    filtered["CO2 Reduction % Display"] = pd.to_numeric(filtered[co2_col], errors="coerce") * 100
     
     # --- Build Plotly chart ---
     fig = px.scatter(
         filtered,
         x=x_col,
         y="Selected_Cost",
-        color=co2_col,
+        color="CO2 Reduction % Display",
         template="plotly_white",
         color_continuous_scale="Viridis",
+        labels={"CO2 Reduction % Display": "CO2 Reduction %"},
         title=f"{selected_metric_label} vs CO₂ Emissions ({selected_sheet})",
     )
+    fig.update_coloraxes(colorbar=dict(ticksuffix="%"))
     
     # Safely find the point for the selected scenario
     if "Selected_Cost" in closest.index:
