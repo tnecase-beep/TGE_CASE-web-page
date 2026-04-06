@@ -685,6 +685,135 @@ def run_sc1():
     # --- Display chart ---
     st.plotly_chart(fig, use_container_width=True)
     
+    # --- Read the corresponding detailed (Demand_*) sheet row for dependent charts ---
+    demand_sheet = f"Demand_{selected_level}%"
+    df_demand = excel_data.get(demand_sheet)
+    closest_idx = int(closest.name) if closest.name is not None else None
+    closest_demand = None
+    if df_demand is not None and closest_idx is not None:
+        if 0 <= closest_idx < len(df_demand):
+            closest_demand = df_demand.iloc[closest_idx]
+
+    # ----------------------------------------------------
+    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION
+    # ----------------------------------------------------
+    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
+    
+    colB, colC = st.columns(2)
+    
+    # --- 2️⃣ Cost Distribution ---
+    with colB:
+        st.subheader("Cost Distribution")
+    
+        cost_components = {
+            "Transportation Cost": closest.get("Transportation Cost", 0) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))),
+            "Sourcing/Handling Cost": closest.get("Sourcing/Handling Cost", 0),
+            "Carbon Cost in Production": closest.get("CO2 Cost in Production", 0),
+            "Inventory Cost": closest.get("Transit Inventory Cost", 0),
+        }
+    
+        df_cost_dist = pd.DataFrame({
+            "Category": list(cost_components.keys()),
+            "Value": list(cost_components.values())
+        })
+    
+        fig_cost_dist = px.bar(
+            df_cost_dist,
+            x="Category",
+            y="Value",
+            text="Value",
+            color="Category",
+            color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"],
+        )
+    
+        fig_cost_dist.update_traces(
+            texttemplate="%{text:,.0f}",
+            textposition="outside"
+        )
+        fig_cost_dist.update_layout(
+            template="plotly_white",
+            showlegend=False,
+            xaxis_tickangle=-35,
+            yaxis_title="€",
+            height=400,
+            yaxis_tickformat=","
+        )
+    
+        st.plotly_chart(fig_cost_dist, use_container_width=True)
+    
+    # --- 3️⃣ Emission Distribution ---
+    with colC:
+        st.subheader("Emission Distribution")
+
+        emission_aliases = {
+            "Production": ["E_Production", "E(Production)", "E_production"],
+            "Last-mile": ["E_Last-mile", "E(Last-mile)", "E_lastmile", "E_last-mile", "E_LastMile", "E(LastMile)"],
+            "Air": ["E_Air", "E(Air)", "E_air"],
+            "Water": ["E_Water", "E(Water)", "E_water", "E(water)", "E_Sea", "E(Sea)", "E_sea", "E(sea)"],
+            "Road": ["E_Road", "E(Road)", "E_road"],
+        }
+
+        def _pick_emission(row, keys):
+            for k in keys:
+                if row is not None and hasattr(row, 'index') and k in row.index:
+                    v = row.get(k, 0)
+                    try:
+                        return float(v)
+                    except Exception:
+                        try:
+                            return float(str(v).replace(',', '.'))
+                        except Exception:
+                            return 0.0
+            return 0.0
+
+        row_for_emissions = closest
+        has_any = any(any(k in row_for_emissions.index for k in ks) for ks in emission_aliases.values())
+        if (not has_any) and (closest_demand is not None):
+            row_for_emissions = closest_demand
+
+        emission_data = {
+            name: _pick_emission(row_for_emissions, keys)
+            for name, keys in emission_aliases.items()
+        }
+
+        emission_data["Total Transport"] = (
+            emission_data.get("Air", 0) + emission_data.get("Water", 0) + emission_data.get("Road", 0)
+        )
+
+        if sum(emission_data.values()) == 0:
+            st.info("No emission data recorded for this scenario.")
+        else:
+            df_emission_dist = pd.DataFrame({
+                "Source": list(emission_data.keys()),
+                "Emissions": list(emission_data.values())
+            })
+
+            fig_emission_dist = px.bar(
+                df_emission_dist,
+                x="Source",
+                y="Emissions",
+                text="Emissions",
+                color="Source",
+                color_discrete_sequence=[
+                    "#1C7C54", "#17A2B8", "#808080", "#FFD700", "#4682B4", "#000000"
+                ]
+            )
+
+            fig_emission_dist.update_traces(
+                texttemplate="%{text:,.2f}",
+                textposition="outside"
+            )
+            fig_emission_dist.update_layout(
+                template="plotly_white",
+                showlegend=False,
+                xaxis_tickangle=-35,
+                yaxis_title="Tons of CO₂",
+                height=400,
+                yaxis_tickformat=","
+            )
+
+            st.plotly_chart(fig_emission_dist, use_container_width=True)
+
 
     
     # ----------------------------------------------------
@@ -704,15 +833,6 @@ def run_sc1():
             except Exception:
                 return 0.0
 
-    # --- Read the corresponding detailed (Demand_*) sheet row for flow variables ---
-    demand_sheet = f"Demand_{selected_level}%"
-    df_demand = excel_data.get(demand_sheet)
-    closest_idx = int(closest.name) if closest.name is not None else None
-    closest_demand = None
-    if df_demand is not None and closest_idx is not None:
-        if 0 <= closest_idx < len(df_demand):
-            closest_demand = df_demand.iloc[closest_idx]
-    
     # --- Total demand reference (scale by demand level) ---
     BASE_MARKET_DEMAND = 111000  # units at 100%
     demand_factor = (
@@ -989,134 +1109,6 @@ def run_sc1():
     if (l3_water + l3_air + l3_road) == 0:
         st.info("No transport activity recorded for this layer.")
     st.markdown("---")
-# ----------------------------------------------------
-    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION
-    # ----------------------------------------------------
-    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
-    
-    colB, colC = st.columns(2)
-    
-    # --- 2️⃣ Cost Distribution ---
-    with colB:
-        st.subheader("Cost Distribution")
-    
-        cost_components = {
-            "Transportation Cost": closest.get("Transportation Cost", 0) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))),
-            "Sourcing/Handling Cost": closest.get("Sourcing/Handling Cost", 0),
-            "Carbon Cost in Production": closest.get("CO2 Cost in Production", 0),
-            "Inventory Cost": closest.get("Transit Inventory Cost", 0),
-        }
-    
-        df_cost_dist = pd.DataFrame({
-            "Category": list(cost_components.keys()),
-            "Value": list(cost_components.values())
-        })
-    
-        fig_cost_dist = px.bar(
-            df_cost_dist,
-            x="Category",
-            y="Value",
-            text="Value",
-            color="Category",
-            color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"],
-        )
-    
-        # ✅ Format with thousand separators
-        fig_cost_dist.update_traces(
-            texttemplate="%{text:,.0f}",  # commas, no decimals
-            textposition="outside"
-        )
-        fig_cost_dist.update_layout(
-            template="plotly_white",
-            showlegend=False,
-            xaxis_tickangle=-35,
-            yaxis_title="€",
-            height=400,
-            yaxis_tickformat=","  # comma separators on y-axis
-        )
-    
-        st.plotly_chart(fig_cost_dist, use_container_width=True)
-    
-    
-    # --- 3️⃣ Emission Distribution ---
-    with colC:
-        st.subheader("Emission Distribution")
-
-        # NOTE: Some sheets use names like E(Air), others use E_air.
-        # We read from the currently selected scenario row ("closest") and fall back to Demand_* if needed.
-        emission_aliases = {
-            "Production": ["E_Production", "E(Production)", "E_production"],
-            "Last-mile": ["E_Last-mile", "E(Last-mile)", "E_lastmile", "E_last-mile", "E_LastMile", "E(LastMile)"],
-            "Air": ["E_Air", "E(Air)", "E_air"],
-            # NOTE: In some files this was called Sea/sea/water/Water. UI should always show 'Water'.
-            "Water": ["E_Water", "E(Water)", "E_water", "E(water)", "E_Sea", "E(Sea)", "E_sea", "E(sea)"],
-            "Road": ["E_Road", "E(Road)", "E_road"],
-        }
-
-        def _pick_emission(row, keys):
-            for k in keys:
-                if row is not None and hasattr(row, 'index') and k in row.index:
-                    v = row.get(k, 0)
-                    try:
-                        return float(v)
-                    except Exception:
-                        try:
-                            return float(str(v).replace(',', '.'))
-                        except Exception:
-                            return 0.0
-            return 0.0
-
-        # Prefer the Array_* row (closest). If it does not contain emission columns, fall back to Demand_* aligned row.
-        row_for_emissions = closest
-        has_any = any(any(k in row_for_emissions.index for k in ks) for ks in emission_aliases.values())
-        if (not has_any) and (closest_demand is not None):
-            row_for_emissions = closest_demand
-
-        emission_data = {
-            name: _pick_emission(row_for_emissions, keys)
-            for name, keys in emission_aliases.items()
-        }
-
-        # ✅ Add Total Transport (sum of Air + water + Road)
-        emission_data["Total Transport"] = (
-            emission_data.get("Air", 0) + emission_data.get("Water", 0) + emission_data.get("Road", 0)
-        )
-
-        if sum(emission_data.values()) == 0:
-            st.info("No emission data recorded for this scenario.")
-        else:
-            df_emission_dist = pd.DataFrame({
-                "Source": list(emission_data.keys()),
-                "Emissions": list(emission_data.values())
-            })
-
-            fig_emission_dist = px.bar(
-                df_emission_dist,
-                x="Source",
-                y="Emissions",
-                text="Emissions",
-                color="Source",
-                color_discrete_sequence=[
-                    "#1C7C54", "#17A2B8", "#808080", "#FFD700", "#4682B4", "#000000"
-                ]
-            )
-
-            # ✅ Add thousand separators
-            fig_emission_dist.update_traces(
-                texttemplate="%{text:,.2f}",
-                textposition="outside"
-            )
-            fig_emission_dist.update_layout(
-                template="plotly_white",
-                showlegend=False,
-                xaxis_tickangle=-35,
-                yaxis_title="Tons of CO₂",
-                height=400,
-                yaxis_tickformat=","
-            )
-
-            st.plotly_chart(fig_emission_dist, use_container_width=True)
-
     # ----------------------------------------------------
     # RAW DATA VIEW
     # ----------------------------------------------------

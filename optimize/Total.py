@@ -1277,6 +1277,8 @@ def _render_puzzle_mode():
             "Total": results.get("CO2_Total", 0),
         })
 
+        render_cost_emission_distribution(results)
+
 
 
         # ===========================================
@@ -1500,9 +1502,6 @@ def _render_puzzle_mode():
             st.metric("✈️ Air", f"{flows['L3']['air']:,.0f}")
             st.metric("🚢 Water", f"{flows['L3']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L3']['road']:,.0f}")
-
-        # Cost + emission distributions (reuse existing renderer)
-        render_cost_emission_distribution(results)
 
     # ------------------------------------------------------------
     # 📤 Puzzle submission (email + solution details -> SharePoint Excel)
@@ -1881,6 +1880,8 @@ if st.button("Run Optimization"):
                 "Total": results.get("CO2_Total", 0),
             })
 
+            render_cost_emission_distribution(results)
+
             # ===========================================
             # 🌍 MAP (no more pd errors!)
             # ===========================================
@@ -2161,12 +2162,6 @@ if st.button("Run Optimization"):
             # ================================================================
             render_transport_flows_by_mode(model)
 
-            # ================================================================
-            # 💰🌿 Cost & Emission Distribution (match SC1/SC2 apps)
-            # ================================================================
-            render_cost_emission_distribution(results)
-
-
         except Exception as e:
             # --------------------------------------------------
             # PRIMARY MODEL FAILED
@@ -2242,6 +2237,8 @@ if st.button("Run Optimization"):
                         "Objective (€)",
                         f"{results_uns['Objective_value']:,.0f}"
                     )
+
+                    render_cost_emission_distribution(results_uns)
 
                     # ===================================================
                     # 🌍 MAP
@@ -2452,12 +2449,6 @@ if st.button("Run Optimization"):
                     # ================================================================
                     render_transport_flows_by_mode(model_uns)
 
-                    # ================================================================
-                    # 💰🌿 Cost & Emission Distribution (match SC1/SC2 apps)
-                    # ================================================================
-                    render_cost_emission_distribution(results_uns)
-
                 except Exception as e2:
                     st.error(f"❌ Fallback model also failed: {e2}")
-
 
