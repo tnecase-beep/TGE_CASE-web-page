@@ -460,27 +460,28 @@ def render_cost_emission_distribution(results: dict):
             "Category": list(cost_parts.keys()),
             "Value": list(cost_parts.values()),
         })
+        df_cost_dist["Value_MEUR"] = pd.to_numeric(df_cost_dist["Value"], errors="coerce") / 1_000_000.0
 
         fig_cost = px.bar(
             df_cost_dist,
             x="Category",
-            y="Value",
-            text="Value",
+            y="Value_MEUR",
+            text="Value_MEUR",
             color="Category",
             color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"],
         )
 
         fig_cost.update_traces(
-            texttemplate="%{text:,.0f}",
+            texttemplate="%{text:.2f} M€",
             textposition="outside",
         )
         fig_cost.update_layout(
             template="plotly_white",
             showlegend=False,
             xaxis_tickangle=-35,
-            yaxis_title="€",
+            yaxis_title="Million €",
             height=400,
-            yaxis_tickformat=",",
+            yaxis_tickformat=".2f",
         )
 
         st.plotly_chart(fig_cost, use_container_width=True)
@@ -2451,4 +2452,3 @@ if st.button("Run Optimization"):
 
                 except Exception as e2:
                     st.error(f"❌ Fallback model also failed: {e2}")
-
