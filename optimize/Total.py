@@ -2246,31 +2246,31 @@ if st.button("Run Optimization"):
                     st.markdown("## 🌍 Global Supply Chain Map ")
 
                     nodes = [
-                    ("Plant", 31.23, 121.47, "Shanghai"),
-                    ("Plant", 22.32, 114.17, "Taiwan"),
-                    ("Cross-dock", 48.85, 2.35, "Paris"),
-                    ("Cross-dock", 50.11, 8.68, "Gdansk"),
-                    ("Cross-dock", 37.98, 23.73, "Vienna"),
-                    ("DC", 47.50, 19.04, "Pardubice"),
-                    ("DC", 48.14, 11.58, "Calais"),
-                    ("DC", 46.95, 7.44, "Riga"),
+                    ("Plant", 31.230416, 121.473701, "Shanghai"),
+                    ("Plant", 23.553100, 121.021100, "Taiwan"),
+                    ("Cross-dock", 48.856610, 2.352220, "Paris"),
+                    ("Cross-dock", 54.352100, 18.646400, "Gdansk"),
+                    ("Cross-dock", 48.208500, 16.372100, "Vienna"),
+                    ("DC", 50.040750, 15.776590, "Pardubice"),
+                    ("DC", 50.629250, 3.057256, "Calais"),
+                    ("DC", 56.946285, 24.105078, "Riga"),
                     ("DC", 36.168056, -5.348611, "Algeciras"),
-                    ("Retail", 55.67, 12.57, "Cologne"),
-                    ("Retail", 53.35, -6.26, "Antwerp"),
-                    ("Retail", 51.50, -0.12, "Krakow"),
-                    ("Retail", 49.82, 19.08, "Kaunas"),
-                    ("Retail", 45.76, 4.83, "Oslo"),
-                    ("Retail", 43.30, 5.37, "Dublin"),
-                    ("Retail", 40.42, -3.70, "Stockholm"),
+                    ("Retail", 50.935173, 6.953101, "Cologne"),
+                    ("Retail", 51.219890, 4.403460, "Antwerp"),
+                    ("Retail", 50.061430, 19.936580, "Krakow"),
+                    ("Retail", 54.902720, 23.909610, "Kaunas"),
+                    ("Retail", 59.911491, 10.757933, "Oslo"),
+                    ("Retail", 53.350140, -6.266155, "Dublin"),
+                    ("Retail", 59.329440, 18.068610, "Stockholm"),
                     ]
 
                     # Add new facilities from fallback model
                     facility_coords = {
-                        "Budapest": (49.61, 6.13, "Budapest"),
-                        "Prague": (44.83, 20.42, "Prague"),
-                        "Cork": (51.90, -8.47, "Cork"),
-                        "Helsinki": (50.45, 14.50, "Helsinki"),
-                        "Warsaw": (42.70, 12.65, "Warsaw"),
+                        "Budapest": (47.497913, 19.040236, "Budapest"),
+                        "Prague": (50.088040, 14.420760, "Prague"),
+                        "Cork": (51.898514, -8.475604, "Cork"),
+                        "Helsinki": (60.169520, 24.935450, "Helsinki"),
+                        "Warsaw": (52.229770, 21.011780, "Warsaw"),
                     }
 
                     for name, (lat, lon, city) in facility_coords.items():
