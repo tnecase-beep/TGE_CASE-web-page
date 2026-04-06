@@ -42,6 +42,11 @@ from collections import defaultdict
 
 
 
+# Toggle Gamification Mode on/off via env var:
+#   ENABLE_GAMIFICATION=1 (default) -> shows Gamification Mode
+#   ENABLE_GAMIFICATION=0          -> hides Gamification Mode
+ENABLE_GAMIFICATION = False
+
 # ================================================================
 # PAGE CONFIG (only once!)
 # ================================================================
@@ -92,10 +97,14 @@ with st.sidebar.expander("🏭 Factory Model", expanded=True):
     )
 
 # Collapsible "Optimization" group
+optimization_nav_options = ["Optimization Dashboard", "Puzzle Mode"]
+if ENABLE_GAMIFICATION:
+    optimization_nav_options.append("Gamification Mode")
+
 with st.sidebar.expander("📊 Optimization", expanded=True):
     opt_choice = st.radio(
         "Select:",
-        ["Optimization Dashboard"],
+        optimization_nav_options,
         index=None,
         key="optimization_radio",
         on_change=_on_optimization_change,
@@ -112,7 +121,7 @@ elif factory_choice == "Scenario 2: Supply Chain Transformation":
     run_sc2()
     st.stop()
 
-elif opt_choice == "Optimization Dashboard":
+elif opt_choice in optimization_nav_options:
     pass  # Continue into optimization block below
 
 else:
@@ -124,9 +133,10 @@ else:
 
         **Get started:** use the **left Navigation** to open a page.
         - **Factory Model (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
-        - **Optimization Dashboard:** run scenarios and compare **cost vs CO₂** (maps, flow breakdowns, and distributions).
+        - **Optimization:** open **Optimization Dashboard** or **Puzzle Mode** directly from the sidebar.
 
-        **Inside the Optimization Dashboard:**
+        **Optimization pages:**
+        - **Optimization Dashboard:** run scenarios and compare **cost vs CO₂** (maps, flow breakdowns, and distributions).
         - **🧩 Puzzle Mode:** Manually build a feasible network (activate sites, set mode shares, allocate production) and see **feasibility warnings + cost/CO₂ implications**.
         - **Scenario 1:** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
         - **Scenario 2:** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
@@ -1584,19 +1594,13 @@ def _render_puzzle_mode():
 
 
 # ------------------------------------------------------------
-# Mode selection (Normal vs Gamification vs Puzzle)
+# Mode selection is driven by the sidebar navigation
 # ------------------------------------------------------------
-# Toggle Gamification Mode on/off via env var:
-#   ENABLE_GAMIFICATION=1 (default) -> shows Gamification Mode
-#   ENABLE_GAMIFICATION=0          -> hides Gamification Mode
-ENABLE_GAMIFICATION = False
-
-mode_options = ["Normal Mode"]
-if ENABLE_GAMIFICATION:
-    mode_options.append("Gamification Mode")
-mode_options.append("Puzzle Mode")
-
-mode = st.radio("Select mode:", mode_options)
+mode = {
+    "Optimization Dashboard": "Normal Mode",
+    "Puzzle Mode": "Puzzle Mode",
+    "Gamification Mode": "Gamification Mode",
+}.get(opt_choice, "Normal Mode")
 
 # default scenario flags
 suez_flag = oil_flag = volcano_flag = trade_flag = False
