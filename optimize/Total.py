@@ -75,7 +75,7 @@ else:
 st.sidebar.title("📌 Navigation")
 
 # Make the two navigation groups mutually exclusive.
-# Otherwise, once a Factory Model page is selected, routing always stops there
+# Otherwise, once a Dashboards page is selected, routing always stops there
 # and the user cannot navigate to the Optimization dashboard.
 def _on_factory_change():
     st.session_state["optimization_radio"] = None
@@ -84,7 +84,7 @@ def _on_optimization_change():
     st.session_state["factory_radio"] = None
 
 # Collapsible "Optimization" group
-optimization_nav_options = ["Optimization Dashboard", "Puzzle Mode"]
+optimization_nav_options = ["Puzzle Mode", "Optimization Mode"]
 if ENABLE_GAMIFICATION:
     optimization_nav_options.append("Gamification Mode")
 
@@ -97,8 +97,8 @@ with st.sidebar.expander("📊 Optimization", expanded=True):
         on_change=_on_optimization_change,
     )
 
-# Collapsible "Factory Model" group
-with st.sidebar.expander("🏭 Factory Model", expanded=True):
+# Collapsible "Dashboards" group
+with st.sidebar.expander("🏭 Dashboards", expanded=True):
     factory_choice = st.radio(
         "Select model:",
         [
@@ -132,12 +132,12 @@ else:
         **Manufacturers (Taiwan & Shanghai) → Cross-docks ( or European Manufacturers) → Distribution Centers → Retailer Hubs → Local Customers**.
 
         **Get started:** use the **left Navigation** to open a page.
-        - **Factory Model (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
-        - **Optimization:** open **Optimization Dashboard** or **Puzzle Mode** directly from the sidebar.
+        - **Dashboards (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
+        - **Optimization:** open **Optimization Mode** or **Puzzle Mode** directly from the sidebar.
 
         **Optimization pages:**
-        - **Optimization Dashboard:** run scenarios and compare **cost vs CO₂** (maps, flow breakdowns, and distributions).
         - **🧩 Puzzle Mode:** Manually build a feasible network (activate sites, set mode shares, allocate production) and see **feasibility warnings + cost/CO₂ implications**.
+        - **Optimization Mode:** run scenarios and compare **cost vs CO₂** (maps, flow breakdowns, and distributions).
         - **Scenario 1:** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
         - **Scenario 2:** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
         """
@@ -1597,7 +1597,7 @@ def _render_puzzle_mode():
 # Mode selection is driven by the sidebar navigation
 # ------------------------------------------------------------
 mode = {
-    "Optimization Dashboard": "Normal Mode",
+    "Optimization Mode": "Normal Mode",
     "Puzzle Mode": "Puzzle Mode",
     "Gamification Mode": "Gamification Mode",
 }.get(opt_choice, "Normal Mode")
