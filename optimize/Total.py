@@ -83,19 +83,6 @@ def _on_factory_change():
 def _on_optimization_change():
     st.session_state["factory_radio"] = None
 
-# Collapsible "Factory Model" group
-with st.sidebar.expander("🏭 Factory Model", expanded=True):
-    factory_choice = st.radio(
-        "Select model:",
-        [
-            "Scenario 1: Process Optimization",
-            "Scenario 2: Supply Chain Transformation"
-        ],
-        index=None,
-        key="factory_radio",
-        on_change=_on_factory_change,
-    )
-
 # Collapsible "Optimization" group
 optimization_nav_options = ["Optimization Dashboard", "Puzzle Mode"]
 if ENABLE_GAMIFICATION:
@@ -108,6 +95,19 @@ with st.sidebar.expander("📊 Optimization", expanded=True):
         index=None,
         key="optimization_radio",
         on_change=_on_optimization_change,
+    )
+
+# Collapsible "Factory Model" group
+with st.sidebar.expander("🏭 Factory Model", expanded=True):
+    factory_choice = st.radio(
+        "Select model:",
+        [
+            "Scenario 1: Process Optimization",
+            "Scenario 2: Supply Chain Transformation"
+        ],
+        index=None,
+        key="factory_radio",
+        on_change=_on_factory_change,
     )
 
 # ================================================================
