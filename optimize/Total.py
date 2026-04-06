@@ -1278,11 +1278,13 @@ def _render_puzzle_mode():
                 "Cost (€)",
                 f"{MIN_COST_BASE_CASE_EUR:,.2f}",
                 delta=f"Your cost: {_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR):+,.2f}%",
+                delta_color="inverse",
             )
             st.metric(
                 "CO₂ (tons)",
                 f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}%",
+                delta_color="inverse",
             )
 
         with bc2:
@@ -1291,11 +1293,13 @@ def _render_puzzle_mode():
                 "Cost (€)",
                 f"{MIN_CO2_BASE_CASE_EUR:,.2f}",
                 delta=f"Your cost: {_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR):+,.2f}%",
+                delta_color="inverse",
             )
             st.metric(
                 "CO₂ (tons)",
                 f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}%",
+                delta_color="inverse",
             )
 
         st.subheader("🌿 CO₂ Emissions")
