@@ -47,6 +47,20 @@ from collections import defaultdict
 #   ENABLE_GAMIFICATION=0          -> hides Gamification Mode
 ENABLE_GAMIFICATION = False
 
+# Code-only toggle for Puzzle Mode scenario events UI.
+# False -> hide the entire Scenario events section from the UI and use defaults below.
+# True  -> show the Scenario events controls in Puzzle Mode.
+SHOW_PUZZLE_SCENARIO_EVENTS_UI = False
+
+# Code-only defaults used whenever the Puzzle Mode Scenario events UI is hidden.
+PUZZLE_SCENARIO_EVENT_DEFAULTS = {
+    "suez_canal": False,
+    "oil_crises": False,
+    "volcano": False,
+    "trade_war": False,
+    "tariff_rate": 1.0,
+}
+
 # ================================================================
 # PAGE CONFIG (only once!)
 # ================================================================
@@ -1001,50 +1015,56 @@ def _render_puzzle_mode():
    
     st.subheader("🧩 Puzzle Mode: Build a Network ")
     st.markdown(
-        "In this mode, **you make the choices** (facility activation, production splits, and mode shares). "
-        "We then **compute cost and CO₂ implications** using the same default data."
+        "In this mode, you make the choices (facility selection, sourcing strategy, and transport mode mix). You can then see the cost and emission implications."
     )
 
     cfg = _puzzle_defaults()
 
-    # Scenario events (optional)
-    st.markdown("#### Scenario events")
+    if SHOW_PUZZLE_SCENARIO_EVENTS_UI:
+        st.markdown("#### Scenario events")
 
-    # On/Off switch to show/hide scenario events and to apply them in computations.
-    # When OFF, all scenario flags are forced to False (even if previously selected).
-    try:
-        enable_events = st.toggle("Enable scenario events", value=False, key="pz_enable_events")
-    except Exception:
-        enable_events = st.checkbox("Enable scenario events", value=False, key="pz_enable_events")
+        # On/Off switch to show/hide scenario events and to apply them in computations.
+        # When OFF, all scenario flags are forced to False (even if previously selected).
+        try:
+            enable_events = st.toggle("Enable scenario events", value=False, key="pz_enable_events")
+        except Exception:
+            enable_events = st.checkbox("Enable scenario events", value=False, key="pz_enable_events")
 
-    if enable_events:
-        col_ev1, col_ev2 = st.columns(2)
-        with col_ev1:
-            suez = st.checkbox("Suez Canal Blockade (forces L1 Water=0)", value=False, key="pz_suez")
-            oil = st.checkbox("Oil Crisis (transport cost ×1.3)", value=False, key="pz_oil")
-        with col_ev2:
-            volcano = st.checkbox("Volcanic Eruption (no air)", value=False, key="pz_volcano")
-            trade = st.checkbox("Trade War (plant sourcing × tariff)", value=False, key="pz_trade")
+        if enable_events:
+            col_ev1, col_ev2 = st.columns(2)
+            with col_ev1:
+                suez = st.checkbox("Suez Canal Blockade (forces L1 Water=0)", value=False, key="pz_suez")
+                oil = st.checkbox("Oil Crisis (transport cost ×1.3)", value=False, key="pz_oil")
+            with col_ev2:
+                volcano = st.checkbox("Volcanic Eruption (no air)", value=False, key="pz_volcano")
+                trade = st.checkbox("Trade War (plant sourcing × tariff)", value=False, key="pz_trade")
 
-        tariff = 1.0
-        if trade:
-            tariff = st.slider("Tariff multiplier on plant sourcing", 1.0, 2.0, 1.3, 0.05, key="pz_tariff")
+            tariff = 1.0
+            if trade:
+                tariff = st.slider("Tariff multiplier on plant sourcing", 1.0, 2.0, 1.3, 0.05, key="pz_tariff")
 
-        scen = {
-            "suez_canal": suez,
-            "oil_crises": oil,
-            "volcano": volcano,
-            "trade_war": trade,
-            "tariff_rate": tariff,
-        }
+            scen = {
+                "suez_canal": suez,
+                "oil_crises": oil,
+                "volcano": volcano,
+                "trade_war": trade,
+                "tariff_rate": tariff,
+            }
+        else:
+            scen = {
+                "suez_canal": False,
+                "oil_crises": False,
+                "volcano": False,
+                "trade_war": False,
+                "tariff_rate": 1.0,
+            }
     else:
-        st.caption("Scenario events are OFF.")
         scen = {
-            "suez_canal": False,
-            "oil_crises": False,
-            "volcano": False,
-            "trade_war": False,
-            "tariff_rate": 1.0,
+            "suez_canal": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("suez_canal", False)),
+            "oil_crises": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("oil_crises", False)),
+            "volcano": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("volcano", False)),
+            "trade_war": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("trade_war", False)),
+            "tariff_rate": float(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("tariff_rate", 1.0)),
         }
 
     # Node selections
