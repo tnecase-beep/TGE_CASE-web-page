@@ -151,7 +151,7 @@ else:
 
         **Optimization pages:**
         - **🧩 Puzzle Mode:** Manually build a feasible network (activate sites, set mode shares, allocate production) and see **feasibility warnings + cost/CO₂ implications**.
-        - **Optimization Mode:** run scenarios and compare **cost vs CO₂** (maps, flow breakdowns, and distributions).
+        - **Optimization Mode:** run scenarios and compare **cost vs CO₂e** (maps, flow breakdowns, and distributions).
         - **Scenario 1:** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
         - **Scenario 2:** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
         """
@@ -476,7 +476,7 @@ def render_cost_emission_distribution(results: dict):
         cost_parts = {
             "Transportation Cost": transport_cost,
             "Sourcing/Handling Cost": sourcing_handling_cost,
-            "CO₂ Cost in Production": co2_cost_production,
+            "CO₂e Cost in Production": co2_cost_production,
             "Inventory Cost": inventory_cost,
         }
 
@@ -560,7 +560,7 @@ def render_cost_emission_distribution(results: dict):
             template="plotly_white",
             showlegend=False,
             xaxis_tickangle=-35,
-            yaxis_title="Tons of CO₂",
+            yaxis_title="Tons of CO₂e",
             height=400,
             yaxis_tickformat=",",
         )
@@ -682,24 +682,21 @@ def _normalize_shares(raw: dict) -> dict:
 
 
 def _lt_ss_table(service_level: float, demand: dict, unit_h: float, unit_penaltycost: float):
-    """Build a small table for LT, SS(€/unit) per mode, aligned with MASTER's logic."""
-    average_distance = 9600
-    speed = {"air": 800, "Water": 10, "road": 40}
-    std_demand = float(np.std(list(demand.values()))) if demand else 0.0
+    """Return the fixed LT/SS table used in SC1F, preserving the existing return shape."""
     modes = ["air", "Water", "road"]
 
-    lt = {}
-    z = {}
-    phi = {}
-    ss = {}
-    for m in modes:
-        mult = 1.2 if m == "Water" else 1.0
-        lt[m] = float(np.round((average_distance * mult) / (speed[m] * 24), 13))
-        z[m] = float(norm.ppf(service_level))
-        phi[m] = float(norm.pdf(z[m]))
-        ss[m] = float(np.sqrt(lt[m] + 1) * std_demand * (unit_penaltycost + unit_h) * phi[m])
+    lt = {
+        "air": 0.5,
+        "Water": 48.0,
+        "road": 10.0,
+    }
+    ss = {
+        "air": 2109.25627631292,
+        "Water": 12055.4037653689,
+        "road": 5711.89299799521,
+    }
 
-    return {"LT (days)": lt, "SS (€/unit)": ss, "h (€/unit)": {m: unit_h for m in modes}}
+    return {"LT (days)": lt, "SS (€/unit)": ss, "h (€/unit)": {m: 0.85 for m in modes}}
 
 
 def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dict]:
