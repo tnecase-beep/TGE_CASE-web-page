@@ -1279,7 +1279,7 @@ def _render_puzzle_mode():
             )
             st.metric(
                 "CO₂ (tons)",
-                f"{MIN_COST_BASE_CASE_CO2e_TON:,.2f}",
+                f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}%",
                 delta_color="inverse",
             )
@@ -1294,7 +1294,7 @@ def _render_puzzle_mode():
             )
             st.metric(
                 "CO₂ (tons)",
-                f"{MIN_CO2_BASE_CASE_CO2e_TON:,.2f}",
+                f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}%",
                 delta_color="inverse",
             )
