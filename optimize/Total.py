@@ -146,14 +146,14 @@ else:
         **Manufacturers (Taiwan & Shanghai) → Cross-docks ( or European Manufacturers) → Distribution Centers → Retailer Hubs → Local Customers**.
 
         **Get started:** use the **left Navigation** to open a page.
-        - **Dashboards (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
         - **Optimization:** open **Optimization Mode** or **Puzzle Mode** directly from the sidebar.
+        - **Dashboards (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
 
         **Optimization pages:**
         - **🧩 Puzzle Mode:** Manually build a feasible network (activate sites, set mode shares, allocate production) and see **feasibility warnings + cost/CO₂ implications**.
         - **Optimization Mode:** run scenarios and compare **cost vs CO₂e** (maps, flow breakdowns, and distributions).
-        - **Scenario 1:** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
-        - **Scenario 2:** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
+        - **Scenario 1: Process Optimization** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
+        - **Scenario 2: Supply Chain Transformation** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
         """
     )
     st.stop()
@@ -1243,11 +1243,11 @@ def _render_puzzle_mode():
         # Fixed reference solutions (from the shared screenshots):
         #   - Min Cost base case: (Cost, CO₂)
         #   - Min CO₂ base case: (Cost, CO₂)
-        MIN_COST_BASE_CASE_EUR = 12_770_125.95
+        MIN_COST_BASE_CASE_EUR = 12_771_461
         MIN_COST_BASE_CASE_CO2_TON = 1_582.42
 
-        MIN_CO2_BASE_CASE_EUR = 15_584_560.46
-        MIN_CO2_BASE_CASE_CO2_TON = 727.91
+        MIN_CO2_BASE_CASE_EUR = 16,821,106
+        MIN_CO2_BASE_CASE_CO2_TON = 712.09
 
         def _pct_change(curr: float, base: float) -> float:
             base = float(base)
@@ -1279,7 +1279,7 @@ def _render_puzzle_mode():
             )
             st.metric(
                 "CO₂ (tons)",
-                f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
+                f"{MIN_COST_BASE_CASE_CO2e_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}%",
                 delta_color="inverse",
             )
@@ -1294,12 +1294,12 @@ def _render_puzzle_mode():
             )
             st.metric(
                 "CO₂ (tons)",
-                f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
+                f"{MIN_CO2_BASE_CASE_CO2e_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}%",
                 delta_color="inverse",
             )
 
-        st.subheader("🌿 CO₂ Emissions")
+        st.subheader("🌿 CO₂e Emissions")
         st.json({
             "Air": results.get("E_air", 0),
             "Water": results.get("E_Water", 0),
