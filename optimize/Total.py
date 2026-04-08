@@ -1243,8 +1243,8 @@ def _render_puzzle_mode():
         # Fixed reference solutions (from the shared screenshots):
         #   - Min Cost base case: (Cost, CO₂)
         #   - Min CO₂ base case: (Cost, CO₂)
-        MIN_COST_BASE_CASE_EUR = 12_771_461
-        MIN_COST_BASE_CASE_CO2_TON = 1_582.42
+        MIN_COST_BASE_CASE_EUR = 12,771,461
+        MIN_COST_BASE_CASE_CO2_TON = 1,582.42
 
         MIN_CO2_BASE_CASE_EUR = 16,821,106
         MIN_CO2_BASE_CASE_CO2_TON = 712.09
