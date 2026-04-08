@@ -1,0 +1,95 @@
+name: build-executables
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload (keeps repo messy but bundle clean)
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          if (Test-Path build) { Remove-Item -Recurse -Force build }
+          if (Test-Path dist)  { Remove-Item -Recurse -Force dist }
+          python -m PyInstaller `
+            --noconfirm --clean --onedir --noconsole `
+            --name "TGECase" `
+            --collect-all streamlit `
+            --collect-all plotly `
+            --collect-all altair `
+            --collect-all pydeck `
+            --collect-all pandas `
+            --collect-all numpy `
+            --collect-all scipy `
+            --collect-all geopy `
+            --collect-all gurobipy `
+            --collect-binaries gurobipy `
+            --collect-submodules gurobipy `
+            --copy-metadata streamlit `
+            --add-data "optimize;app" `
+            launcher.py
+          Compress-Archive -Path dist\TGECase\* -DestinationPath dist\TGECase-Windows.zip
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          rm -rf build dist
+          python -m PyInstaller \
+            --noconfirm --clean --onedir --windowed \
+            --name "TGECase" \
+            --osx-bundle-identifier "com.tgecase.app" \
+            --collect-all streamlit \
+            --collect-all plotly \
+            --collect-all altair \
+            --collect-all pydeck \
+            --collect-all pandas \
+            --collect-all numpy \
+            --collect-all scipy \
+            --collect-all geopy \
+            --collect-all gurobipy \
+            --collect-binaries gurobipy \
+            --collect-submodules gurobipy \
+            --copy-metadata streamlit \
+            --add-data "optimize:app" \
+            launcher.py
+
+          # Ad-hoc sign (not notarized, but reduces some “damaged app” issues)
+          codesign --force --deep --sign - dist/TGECase.app
+
+          # Zip the .app properly (DO NOT swallow errors)
+          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS.zip
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TGECase-${{ runner.os }}
+          path: dist/*.zip
