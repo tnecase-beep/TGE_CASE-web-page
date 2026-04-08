@@ -1273,7 +1273,7 @@ def _render_puzzle_mode():
             st.markdown("**Min Cost base case**")
             st.metric(
                 "Cost (€)",
-                f"{MIN_COST_BASE_CASE_EUR:,.2f}",
+                f"{MIN_COST_BASE_CASE_EUR:,.0f}",
                 delta=f"Your cost: {_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR):+,.2f}%",
                 delta_color="inverse",
             )
@@ -1288,7 +1288,7 @@ def _render_puzzle_mode():
             st.markdown("**Min CO₂ base case**")
             st.metric(
                 "Cost (€)",
-                f"{MIN_CO2_BASE_CASE_EUR:,.2f}",
+                f"{MIN_CO2_BASE_CASE_EUR:,.0f}",
                 delta=f"Your cost: {_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR):+,.2f}%",
                 delta_color="inverse",
             )
