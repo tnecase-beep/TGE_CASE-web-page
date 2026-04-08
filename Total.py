@@ -10,7 +10,6 @@ Created on Fri Nov 28 15:50:25 2025
 # ================================================================
 
 import os
-import random
 import re
 import streamlit as st
 import pandas as pd
@@ -19,7 +18,7 @@ import streamlit.components.v1 as components
 import gurobipy as gp
 import inspect
 import numpy as np
-from scipy.stats import norm
+from statistics import NormalDist as _ND; _nd = _ND(); norm = type('norm', (), {'pdf': staticmethod(_nd.pdf), 'ppf': staticmethod(_nd.inv_cdf), 'cdf': staticmethod(_nd.cdf)})()
 from datetime import datetime, timezone
 
 # Puzzle submissions -> SharePoint Excel (implemented in post_data.py)
@@ -42,6 +41,25 @@ from MASTER import run_scenario_master
 from collections import defaultdict
 
 
+
+# Toggle Gamification Mode on/off via env var:
+#   ENABLE_GAMIFICATION=1 (default) -> shows Gamification Mode
+#   ENABLE_GAMIFICATION=0          -> hides Gamification Mode
+ENABLE_GAMIFICATION = False
+
+# Code-only toggle for Puzzle Mode scenario events UI.
+# False -> hide the entire Scenario events section from the UI and use defaults below.
+# True  -> show the Scenario events controls in Puzzle Mode.
+SHOW_PUZZLE_SCENARIO_EVENTS_UI = False
+
+# Code-only defaults used whenever the Puzzle Mode Scenario events UI is hidden.
+PUZZLE_SCENARIO_EVENT_DEFAULTS = {
+    "suez_canal": False,
+    "oil_crises": False,
+    "volcano": False,
+    "trade_war": False,
+    "tariff_rate": 1.0,
+}
 
 # ================================================================
 # PAGE CONFIG (only once!)
@@ -71,7 +89,7 @@ else:
 st.sidebar.title("📌 Navigation")
 
 # Make the two navigation groups mutually exclusive.
-# Otherwise, once a Factory Model page is selected, routing always stops there
+# Otherwise, once a Dashboards page is selected, routing always stops there
 # and the user cannot navigate to the Optimization dashboard.
 def _on_factory_change():
     st.session_state["optimization_radio"] = None
@@ -79,41 +97,45 @@ def _on_factory_change():
 def _on_optimization_change():
     st.session_state["factory_radio"] = None
 
-# Collapsible "Factory Model" group
-with st.sidebar.expander("🏭 Factory Model", expanded=True):
+# Collapsible "Optimization" group
+optimization_nav_options = ["Puzzle Mode", "Optimization Mode"]
+if ENABLE_GAMIFICATION:
+    optimization_nav_options.append("Gamification Mode")
+
+with st.sidebar.expander("📊 Optimization", expanded=True):
+    opt_choice = st.radio(
+        "Select:",
+        optimization_nav_options,
+        index=None,
+        key="optimization_radio",
+        on_change=_on_optimization_change,
+    )
+
+# Collapsible "Dashboards" group
+with st.sidebar.expander("🏭 Dashboards", expanded=True):
     factory_choice = st.radio(
         "Select model:",
         [
-            "SC1 – Existing Facilities",
-            "SC2 – New Facilities"
+            "Scenario 1: Process Optimization",
+            "Scenario 2: Supply Chain Transformation"
         ],
         index=None,
         key="factory_radio",
         on_change=_on_factory_change,
     )
 
-# Collapsible "Optimization" group
-with st.sidebar.expander("📊 Optimization", expanded=True):
-    opt_choice = st.radio(
-        "Select:",
-        ["Optimization Dashboard"],
-        index=None,
-        key="optimization_radio",
-        on_change=_on_optimization_change,
-    )
-
 # ================================================================
 # ROUTING LOGIC
 # ================================================================
-if factory_choice == "SC1 – Existing Facilities":
+if factory_choice == "Scenario 1: Process Optimization":
     run_sc1()
     st.stop()
 
-elif factory_choice == "SC2 – New Facilities":
+elif factory_choice == "Scenario 2: Supply Chain Transformation":
     run_sc2()
     st.stop()
 
-elif opt_choice == "Optimization Dashboard":
+elif opt_choice in optimization_nav_options:
     pass  # Continue into optimization block below
 
 else:
@@ -124,11 +146,12 @@ else:
         **Manufacturers (Taiwan & Shanghai) → Cross-docks ( or European Manufacturers) → Distribution Centers → Retailer Hubs → Local Customers**.
 
         **Get started:** use the **left Navigation** to open a page.
-        - **Factory Model (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
-        - **Optimization Dashboard:** run scenarios and compare **cost vs CO₂** (maps, flow breakdowns, and distributions).
+        - **Dashboards (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
+        - **Optimization:** open **Optimization Mode** or **Puzzle Mode** directly from the sidebar.
 
-        **Inside the Optimization Dashboard:**
+        **Optimization pages:**
         - **🧩 Puzzle Mode:** Manually build a feasible network (activate sites, set mode shares, allocate production) and see **feasibility warnings + cost/CO₂ implications**.
+        - **Optimization Mode:** run scenarios and compare **cost vs CO₂e** (maps, flow breakdowns, and distributions).
         - **Scenario 1:** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
         - **Scenario 2:** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
         """
@@ -453,7 +476,7 @@ def render_cost_emission_distribution(results: dict):
         cost_parts = {
             "Transportation Cost": transport_cost,
             "Sourcing/Handling Cost": sourcing_handling_cost,
-            "CO₂ Cost in Production": co2_cost_production,
+            "CO₂e Cost in Production": co2_cost_production,
             "Inventory Cost": inventory_cost,
         }
 
@@ -461,27 +484,28 @@ def render_cost_emission_distribution(results: dict):
             "Category": list(cost_parts.keys()),
             "Value": list(cost_parts.values()),
         })
+        df_cost_dist["Value_MEUR"] = pd.to_numeric(df_cost_dist["Value"], errors="coerce") / 1_000_000.0
 
         fig_cost = px.bar(
             df_cost_dist,
             x="Category",
-            y="Value",
-            text="Value",
+            y="Value_MEUR",
+            text="Value_MEUR",
             color="Category",
             color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"],
         )
 
         fig_cost.update_traces(
-            texttemplate="%{text:,.0f}",
+            texttemplate="%{text:.2f} M€",
             textposition="outside",
         )
         fig_cost.update_layout(
             template="plotly_white",
             showlegend=False,
             xaxis_tickangle=-35,
-            yaxis_title="€",
+            yaxis_title="Million €",
             height=400,
-            yaxis_tickformat=",",
+            yaxis_tickformat=".2f",
         )
 
         st.plotly_chart(fig_cost, use_container_width=True)
@@ -536,7 +560,7 @@ def render_cost_emission_distribution(results: dict):
             template="plotly_white",
             showlegend=False,
             xaxis_tickangle=-35,
-            yaxis_title="Tons of CO₂",
+            yaxis_title="Tons of CO₂e",
             height=400,
             yaxis_tickformat=",",
         )
@@ -658,24 +682,21 @@ def _normalize_shares(raw: dict) -> dict:
 
 
 def _lt_ss_table(service_level: float, demand: dict, unit_h: float, unit_penaltycost: float):
-    """Build a small table for LT, SS(€/unit) per mode, aligned with MASTER's logic."""
-    average_distance = 9600
-    speed = {"air": 800, "Water": 10, "road": 40}
-    std_demand = float(np.std(list(demand.values()))) if demand else 0.0
+    """Return the fixed LT/SS table used in SC1F, preserving the existing return shape."""
     modes = ["air", "Water", "road"]
 
-    lt = {}
-    z = {}
-    phi = {}
-    ss = {}
-    for m in modes:
-        mult = 1.2 if m == "Water" else 1.0
-        lt[m] = float(np.round((average_distance * mult) / (speed[m] * 24), 13))
-        z[m] = float(norm.ppf(service_level))
-        phi[m] = float(norm.pdf(z[m]))
-        ss[m] = float(np.sqrt(lt[m] + 1) * std_demand * (unit_penaltycost + unit_h) * phi[m])
+    lt = {
+        "air": 0.5,
+        "Water": 48.0,
+        "road": 10.0,
+    }
+    ss = {
+        "air": 2109.25627631292,
+        "Water": 12055.4037653689,
+        "road": 5711.89299799521,
+    }
 
-    return {"LT (days)": lt, "SS (€/unit)": ss, "h (€/unit)": {m: unit_h for m in modes}}
+    return {"LT (days)": lt, "SS (€/unit)": ss, "h (€/unit)": {m: 0.85 for m in modes}}
 
 
 def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dict]:
@@ -991,50 +1012,56 @@ def _render_puzzle_mode():
    
     st.subheader("🧩 Puzzle Mode: Build a Network ")
     st.markdown(
-        "In this mode, **you make the choices** (facility activation, production splits, and mode shares). "
-        "We then **compute cost and CO₂ implications** using the same default data."
+        "In this mode, you make the choices (facility selection, sourcing strategy, and transport mode mix). You can then see the cost and emission implications."
     )
 
     cfg = _puzzle_defaults()
 
-    # Scenario events (optional)
-    st.markdown("#### Scenario events")
+    if SHOW_PUZZLE_SCENARIO_EVENTS_UI:
+        st.markdown("#### Scenario events")
 
-    # On/Off switch to show/hide scenario events and to apply them in computations.
-    # When OFF, all scenario flags are forced to False (even if previously selected).
-    try:
-        enable_events = st.toggle("Enable scenario events", value=False, key="pz_enable_events")
-    except Exception:
-        enable_events = st.checkbox("Enable scenario events", value=False, key="pz_enable_events")
+        # On/Off switch to show/hide scenario events and to apply them in computations.
+        # When OFF, all scenario flags are forced to False (even if previously selected).
+        try:
+            enable_events = st.toggle("Enable scenario events", value=False, key="pz_enable_events")
+        except Exception:
+            enable_events = st.checkbox("Enable scenario events", value=False, key="pz_enable_events")
 
-    if enable_events:
-        col_ev1, col_ev2 = st.columns(2)
-        with col_ev1:
-            suez = st.checkbox("Suez Canal Blockade (forces L1 Water=0)", value=False, key="pz_suez")
-            oil = st.checkbox("Oil Crisis (transport cost ×1.3)", value=False, key="pz_oil")
-        with col_ev2:
-            volcano = st.checkbox("Volcanic Eruption (no air)", value=False, key="pz_volcano")
-            trade = st.checkbox("Trade War (plant sourcing × tariff)", value=False, key="pz_trade")
+        if enable_events:
+            col_ev1, col_ev2 = st.columns(2)
+            with col_ev1:
+                suez = st.checkbox("Suez Canal Blockade (forces L1 Water=0)", value=False, key="pz_suez")
+                oil = st.checkbox("Oil Crisis (transport cost ×1.3)", value=False, key="pz_oil")
+            with col_ev2:
+                volcano = st.checkbox("Volcanic Eruption (no air)", value=False, key="pz_volcano")
+                trade = st.checkbox("Trade War (plant sourcing × tariff)", value=False, key="pz_trade")
 
-        tariff = 1.0
-        if trade:
-            tariff = st.slider("Tariff multiplier on plant sourcing", 1.0, 2.0, 1.3, 0.05, key="pz_tariff")
+            tariff = 1.0
+            if trade:
+                tariff = st.slider("Tariff multiplier on plant sourcing", 1.0, 2.0, 1.3, 0.05, key="pz_tariff")
 
-        scen = {
-            "suez_canal": suez,
-            "oil_crises": oil,
-            "volcano": volcano,
-            "trade_war": trade,
-            "tariff_rate": tariff,
-        }
+            scen = {
+                "suez_canal": suez,
+                "oil_crises": oil,
+                "volcano": volcano,
+                "trade_war": trade,
+                "tariff_rate": tariff,
+            }
+        else:
+            scen = {
+                "suez_canal": False,
+                "oil_crises": False,
+                "volcano": False,
+                "trade_war": False,
+                "tariff_rate": 1.0,
+            }
     else:
-        st.caption("Scenario events are OFF.")
         scen = {
-            "suez_canal": False,
-            "oil_crises": False,
-            "volcano": False,
-            "trade_war": False,
-            "tariff_rate": 1.0,
+            "suez_canal": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("suez_canal", False)),
+            "oil_crises": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("oil_crises", False)),
+            "volcano": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("volcano", False)),
+            "trade_war": bool(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("trade_war", False)),
+            "tariff_rate": float(PUZZLE_SCENARIO_EVENT_DEFAULTS.get("tariff_rate", 1.0)),
         }
 
     # Node selections
@@ -1248,11 +1275,13 @@ def _render_puzzle_mode():
                 "Cost (€)",
                 f"{MIN_COST_BASE_CASE_EUR:,.2f}",
                 delta=f"Your cost: {_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR):+,.2f}%",
+                delta_color="inverse",
             )
             st.metric(
                 "CO₂ (tons)",
                 f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}%",
+                delta_color="inverse",
             )
 
         with bc2:
@@ -1261,11 +1290,13 @@ def _render_puzzle_mode():
                 "Cost (€)",
                 f"{MIN_CO2_BASE_CASE_EUR:,.2f}",
                 delta=f"Your cost: {_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR):+,.2f}%",
+                delta_color="inverse",
             )
             st.metric(
                 "CO₂ (tons)",
                 f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"Your CO₂: {_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}%",
+                delta_color="inverse",
             )
 
         st.subheader("🌿 CO₂ Emissions")
@@ -1277,6 +1308,8 @@ def _render_puzzle_mode():
             "Production": results.get("E_production", 0),
             "Total": results.get("CO2_Total", 0),
         })
+
+        render_cost_emission_distribution(results)
 
 
 
@@ -1502,9 +1535,6 @@ def _render_puzzle_mode():
             st.metric("🚢 Water", f"{flows['L3']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L3']['road']:,.0f}")
 
-        # Cost + emission distributions (reuse existing renderer)
-        render_cost_emission_distribution(results)
-
     # ------------------------------------------------------------
     # 📤 Puzzle submission (email + solution details -> SharePoint Excel)
     # ------------------------------------------------------------
@@ -1585,19 +1615,13 @@ def _render_puzzle_mode():
 
 
 # ------------------------------------------------------------
-# Mode selection (Normal vs Gamification vs Puzzle)
+# Mode selection is driven by the sidebar navigation
 # ------------------------------------------------------------
-# Toggle Gamification Mode on/off via env var:
-#   ENABLE_GAMIFICATION=1 (default) -> shows Gamification Mode
-#   ENABLE_GAMIFICATION=0          -> hides Gamification Mode
-ENABLE_GAMIFICATION = False
-
-mode_options = ["Normal Mode"]
-if ENABLE_GAMIFICATION:
-    mode_options.append("Gamification Mode")
-mode_options.append("Puzzle Mode")
-
-mode = st.radio("Select mode:", mode_options)
+mode = {
+    "Optimization Mode": "Normal Mode",
+    "Puzzle Mode": "Puzzle Mode",
+    "Gamification Mode": "Gamification Mode",
+}.get(opt_choice, "Normal Mode")
 
 # default scenario flags
 suez_flag = oil_flag = volcano_flag = trade_flag = False
@@ -1651,20 +1675,26 @@ co2_pct = positive_input("CO₂ Reduction Target (%)", 50.0) / 100
 
 # In Gamification Mode we always run the parametric MASTER model.
 # Model selection has no effect there, so we hide the selector.
-if mode == "Gamification Mode":
-    model_choice = "Scenario 2 – Allow New Facilities"
-else:
-    model_choice = st.selectbox(
-        "Optimization model:",
-        ["Scenario 1  – Existing Facilities Only", "Scenario 2 – Allow New Facilities"]
-    )
+MODEL_LABEL_TO_ID = {
+    "Scenario 1 – Existing Facilities Only (SC1F)": "SC1F",
+    "Scenario 2 – Allow New Facilities (SC2F)": "SC2F",
+}
 
+if mode == "Gamification Mode":
+    model_choice_label = "Scenario 2 – Allow New Facilities (SC2F)"
+    model_id = "SC2F"
+else:
+    model_choice_label = st.selectbox(
+        "Optimization model:",
+        list(MODEL_LABEL_TO_ID.keys()),
+    )
+    model_id = MODEL_LABEL_TO_ID.get(model_choice_label, "SC2F")
 # Base sourcing costs (same as MASTER defaults)
 BASE_SOURCING_COST = {"Taiwan": 3.343692308, "Shanghai": 3.423384615}
 
 # Expose sourcing-cost multiplier and EU carbon price only for SC2F in Normal Mode.
 # (Gamification Mode keeps MASTER defaults and does not expose these controls.)
-if (mode == "Normal Mode") and ("SC2F" in model_choice):
+if (mode == "Normal Mode") and (model_id == "SC2F"):
     sourcing_cost_multiplier_pct = st.slider(
         "Sourcing Cost Multiplier for Asian facilites (%)",
         min_value=50,
@@ -1694,7 +1724,7 @@ if "service_level" not in st.session_state:
 
 
 # Only let user edit it in Normal Mode + SC1F (your requirement)
-if (mode == "Normal Mode") and ("SC1F" in model_choice):
+if (mode == "Normal Mode") and (model_id == "SC1F"):
     st.session_state["service_level"] = st.slider(
         "Service Level",
         min_value=0.50,
@@ -1765,7 +1795,7 @@ if st.button("Run Optimization"):
                     # Use the same CO₂ price the user entered
                     # - SC1F seçiliyse: co2_cost_per_ton var
                     # - SC2F seçiliyse: co2_cost_per_ton_New var
-                    bench_co2_new      = co2_cost_per_ton_New if "SC2F" in model_choice else co2_cost_per_ton
+                    bench_co2_new      = co2_cost_per_ton_New if model_id == "SC2F" else co2_cost_per_ton
                 
                     bench_kwargs = dict(
                         CO_2_percentage=co2_pct,
@@ -1791,7 +1821,7 @@ if st.button("Run Optimization"):
                 
                 
 
-            elif "SC1F" in model_choice:
+            elif model_id == "SC1F":
                 # Existing facilities only
                 sc1_kwargs = dict(
                     CO_2_percentage=co2_pct,
@@ -1875,6 +1905,8 @@ if st.button("Run Optimization"):
                 "Production": results.get("E_production", 0),
                 "Total": results.get("CO2_Total", 0),
             })
+
+            render_cost_emission_distribution(results)
 
             # ===========================================
             # 🌍 MAP (no more pd errors!)
@@ -2156,12 +2188,6 @@ if st.button("Run Optimization"):
             # ================================================================
             render_transport_flows_by_mode(model)
 
-            # ================================================================
-            # 💰🌿 Cost & Emission Distribution (match SC1/SC2 apps)
-            # ================================================================
-            render_cost_emission_distribution(results)
-
-
         except Exception as e:
             # --------------------------------------------------
             # PRIMARY MODEL FAILED
@@ -2184,7 +2210,7 @@ if st.button("Run Optimization"):
                     # --------------------------------------------------
                     # CHOOSE CORRECT FALLBACK MODEL
                     # --------------------------------------------------
-                    if "SC2F" in model_choice:
+                    if model_id == "SC2F":
                         from Scenario_Setting_For_SC2F_uns import run_scenario as run_Uns
                         results_uns, model_uns = run_Uns(
                             CO_2_percentage=co2_pct,
@@ -2238,37 +2264,39 @@ if st.button("Run Optimization"):
                         f"{results_uns['Objective_value']:,.0f}"
                     )
 
+                    render_cost_emission_distribution(results_uns)
+
                     # ===================================================
                     # 🌍 MAP
                     # ===================================================
                     st.markdown("## 🌍 Global Supply Chain Map ")
 
                     nodes = [
-                    ("Plant", 31.23, 121.47, "Shanghai"),
-                    ("Plant", 22.32, 114.17, "Taiwan"),
-                    ("Cross-dock", 48.85, 2.35, "Paris"),
-                    ("Cross-dock", 50.11, 8.68, "Gdansk"),
-                    ("Cross-dock", 37.98, 23.73, "Vienna"),
-                    ("DC", 47.50, 19.04, "Pardubice"),
-                    ("DC", 48.14, 11.58, "Calais"),
-                    ("DC", 46.95, 7.44, "Riga"),
+                    ("Plant", 31.230416, 121.473701, "Shanghai"),
+                    ("Plant", 23.553100, 121.021100, "Taiwan"),
+                    ("Cross-dock", 48.856610, 2.352220, "Paris"),
+                    ("Cross-dock", 54.352100, 18.646400, "Gdansk"),
+                    ("Cross-dock", 48.208500, 16.372100, "Vienna"),
+                    ("DC", 50.040750, 15.776590, "Pardubice"),
+                    ("DC", 50.629250, 3.057256, "Calais"),
+                    ("DC", 56.946285, 24.105078, "Riga"),
                     ("DC", 36.168056, -5.348611, "Algeciras"),
-                    ("Retail", 55.67, 12.57, "Cologne"),
-                    ("Retail", 53.35, -6.26, "Antwerp"),
-                    ("Retail", 51.50, -0.12, "Krakow"),
-                    ("Retail", 49.82, 19.08, "Kaunas"),
-                    ("Retail", 45.76, 4.83, "Oslo"),
-                    ("Retail", 43.30, 5.37, "Dublin"),
-                    ("Retail", 40.42, -3.70, "Stockholm"),
+                    ("Retail", 50.935173, 6.953101, "Cologne"),
+                    ("Retail", 51.219890, 4.403460, "Antwerp"),
+                    ("Retail", 50.061430, 19.936580, "Krakow"),
+                    ("Retail", 54.902720, 23.909610, "Kaunas"),
+                    ("Retail", 59.911491, 10.757933, "Oslo"),
+                    ("Retail", 53.350140, -6.266155, "Dublin"),
+                    ("Retail", 59.329440, 18.068610, "Stockholm"),
                     ]
 
                     # Add new facilities from fallback model
                     facility_coords = {
-                        "Budapest": (49.61, 6.13, "Budapest"),
-                        "Prague": (44.83, 20.42, "Prague"),
-                        "Cork": (51.90, -8.47, "Cork"),
-                        "Helsinki": (50.45, 14.50, "Helsinki"),
-                        "Warsaw": (42.70, 12.65, "Warsaw"),
+                        "Budapest": (47.497913, 19.040236, "Budapest"),
+                        "Prague": (50.088040, 14.420760, "Prague"),
+                        "Cork": (51.898514, -8.475604, "Cork"),
+                        "Helsinki": (60.169520, 24.935450, "Helsinki"),
+                        "Warsaw": (52.229770, 21.011780, "Warsaw"),
                     }
 
                     for name, (lat, lon, city) in facility_coords.items():
@@ -2447,12 +2475,5 @@ if st.button("Run Optimization"):
                     # ================================================================
                     render_transport_flows_by_mode(model_uns)
 
-                    # ================================================================
-                    # 💰🌿 Cost & Emission Distribution (match SC1/SC2 apps)
-                    # ================================================================
-                    render_cost_emission_distribution(results_uns)
-
                 except Exception as e2:
                     st.error(f"❌ Fallback model also failed: {e2}")
-
-
