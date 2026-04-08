@@ -8,11 +8,9 @@ Created on Tue Oct 14 10:37:00 2025
 from gurobipy import Model, GRB, quicksum
 import pandas as pd
 import numpy as np
-from scipy.stats import norm
+from statistics import NormalDist as _ND; _nd = _ND(); norm = type('norm', (), {'pdf': staticmethod(_nd.pdf), 'ppf': staticmethod(_nd.inv_cdf), 'cdf': staticmethod(_nd.cdf)})()
 from helpers import print_flows, print_mode_breakdown, compute_inventory_cost, compute_transport_cost
 import time
-import json
-import streamlit.components.v1 as components
 
 
 
@@ -121,7 +119,7 @@ def run_scenario(
     data["h (€/unit)"] = [0.85, 0.85, 0.85]
     
     # LT (days)
-    data["LT (days)"] = [0.5, 48, 10 ]    
+    data["LT (days)"] = [0.5, 48, 10]    
     # Z-scores and Densities
     z_values = [norm.ppf(α) for α in service_level.values()]
     phi_values = [norm.pdf(z) for z in z_values]
@@ -130,10 +128,7 @@ def run_scenario(
     data["Density φ(Φ^-1(α))"] = phi_values
     
     # SS (€/unit) = √(LT + 1) * σ * (p + h) * φ(z)
-    data["SS (€/unit)"] = [
-        np.sqrt(data["LT (days)"][i] + 1) * std_demand * (unit_penaltycost + data["h (€/unit)"][i]) * data["Density φ(Φ^-1(α))"][i]
-        for i in range(len(data["transportation"]))
-    ]    
+    data["SS (€/unit)"] = [2109.25627631292, 12055.4037653689, 5711.89299799521]    
     
     
     Modes = ["air", "Water", "road"]

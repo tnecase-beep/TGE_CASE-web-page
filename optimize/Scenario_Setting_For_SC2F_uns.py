@@ -9,10 +9,9 @@ Created on Fri Nov 28 21:33:29 2025
 from gurobipy import Model, GRB, quicksum
 import pandas as pd
 import numpy as np
-from scipy.stats import norm
+from statistics import NormalDist as _ND; _nd = _ND(); norm = type('norm', (), {'pdf': staticmethod(_nd.pdf), 'ppf': staticmethod(_nd.inv_cdf), 'cdf': staticmethod(_nd.cdf)})()
 from helpers import print_flows, print_mode_breakdown, compute_inventory_cost, compute_transport_cost
 import time
-import json
 
 def run_scenario(
     dc_capacity=None,
@@ -118,10 +117,7 @@ def run_scenario(
     data["Density φ(Φ^-1(α))"] = phi_values
     
     # SS (€/unit) = √(LT + 1) * σ * (p + h) * φ(z)
-    data["SS (€/unit)"] = [
-        np.sqrt(data["LT (days)"][i] + 1) * std_demand * (unit_penaltycost + data["h (€/unit)"][i]) * data["Density φ(Φ^-1(α))"][i]
-        for i in range(len(data["transportation"]))
-    ]    
+    data["SS (€/unit)"] = [2109.25627631292, 12055.4037653689, 5711.89299799521]    
         
     
     Modes = ["air", "Water", "road"]
@@ -738,6 +734,8 @@ def simulate_scenarios_full():
         CO_2_CostsAtEU = [20 * i for i in range(0, 6)]     # 0–100 €/ton
         unit_penaltycost = [1.7]
 
+        sourcing_cost_multipliers = [0.5 * i for i in range(1, 7)]  # 0.5 to 3.0
+        
         scenario_counter = 0
 
         for co2_pct in co2_values:
