@@ -18,7 +18,7 @@ Returns:
 from gurobipy import Model, GRB, quicksum
 import pandas as pd
 import numpy as np
-from scipy.stats import norm
+from statistics import NormalDist as _ND; _nd = _ND(); norm = type('norm', (), {'pdf': staticmethod(_nd.pdf), 'ppf': staticmethod(_nd.inv_cdf), 'cdf': staticmethod(_nd.cdf)})()
 
 
 
@@ -241,6 +241,7 @@ mode_share_tol=1e-6,
         "Water": service_level,
         "road": service_level,
     }
+    df["h (â‚¬/unit)"] = 0.85
 
     # Build LT, z, φ, and SS(€/unit) if missing
     if True:
@@ -256,9 +257,21 @@ mode_share_tol=1e-6,
             for m in modes
         ]
 
+        # Override with the fixed manual table used in SC1F.
+        lt_manual = {"air": 0.5, "Water": 48.0, "road": 10.0}
+        ss_manual = {
+            "air": 2109.25627631292,
+            "Water": 12055.4037653689,
+            "road": 5711.89299799521,
+        }
+        df["LT (days)"] = [lt_manual[m] for m in df.index]
+    df["SS (â‚¬/unit)"] = [ss_manual[m] for m in df.index]
+
         # Z ve phi değerlerini de aynı sırayla (df.index sırasıyla) üret
-        z_values = [norm.ppf(service_level[m]) for m in modes]
-        phi_values = [norm.pdf(z) for z in z_values]
+    z_values = [norm.ppf(service_level[m]) for m in modes]
+    phi_values = [norm.pdf(z) for z in z_values]
+
+    if True:
 
         df["Z-score Φ^-1(α)"] = z_values
         df["Density φ(Φ^-1(α))"] = phi_values
@@ -274,6 +287,9 @@ mode_share_tol=1e-6,
  
     
     tau = {m: df.loc[m, "t (€/kg-km)"] for m in df.index}
+
+    df["LT (days)"] = [0.5, 48.0, 10.0]
+    df["SS (â‚¬/unit)"] = [2109.25627631292, 12055.4037653689, 5711.89299799521]
 
     # Distances (km); where missing, we use simple placeholders
     # Plant -> Crossdock (2 x 3)
@@ -1181,4 +1197,3 @@ mode_share_tol=1e-6,
     }
 
     return results, model
-
