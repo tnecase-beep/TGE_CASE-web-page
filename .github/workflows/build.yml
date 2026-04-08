@@ -11,10 +11,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -33,57 +33,32 @@ jobs:
       - name: Build Windows app
         shell: powershell
         run: |
-          if (Test-Path build) { Remove-Item -Recurse -Force build }
-          if (Test-Path dist)  { Remove-Item -Recurse -Force dist }
-          python -m PyInstaller `
-            --noconfirm --clean --onedir --noconsole `
-            --name "TGECase" `
-            --collect-all streamlit `
-            --collect-all plotly `
-            --collect-all altair `
-            --collect-all pydeck `
-            --collect-all pandas `
-            --collect-all numpy `
-            --collect-all scipy `
-            --collect-all geopy `
-            --collect-all gurobipy `
-            --collect-binaries gurobipy `
-            --collect-submodules gurobipy `
-            --hidden-import _socket `
-            --hidden-import socket `
-            --hidden-import select `
-            --hidden-import _multiprocessing `
-            --hidden-import multiprocessing `
-            --hidden-import _queue `
-            --hidden-import _overlapped `
-            --copy-metadata streamlit `
-            --add-data "optimize;app" `
-            launcher.py 2>&1 | Tee-Object -FilePath pyinstaller-windows.log
-          Compress-Archive -Path dist\TGECase\* -DestinationPath dist\TGECase-Windows.zip
+          powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 
       - name: Verify Windows output
         shell: powershell
         run: |
           if (-not (Test-Path dist\TGECase\TGECase.exe)) { throw "Windows exe not found." }
+          if (-not (Test-Path dist\TGECase-Windows.zip)) { throw "Windows zip not found." }
 
       - name: Upload Windows artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TGECase-Windows
           if-no-files-found: warn
           path: |
             dist/TGECase-Windows.zip
-            pyinstaller-windows.log
+            pyinstaller_output.txt
 
   build-macos-intel:
-    runs-on: macos-13
+    runs-on: macos-15-intel
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -146,7 +121,7 @@ jobs:
 
       - name: Upload macOS Intel artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TGECase-macOS-Intel
           if-no-files-found: warn
@@ -158,10 +133,10 @@ jobs:
     runs-on: macos-14
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -224,7 +199,7 @@ jobs:
 
       - name: Upload macOS Apple Silicon artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TGECase-macOS-AppleSilicon
           if-no-files-found: warn
