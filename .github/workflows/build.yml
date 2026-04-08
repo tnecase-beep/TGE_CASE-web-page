@@ -7,11 +7,8 @@ on:
       - "v*"
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -28,13 +25,12 @@ jobs:
           if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
           pip install pyinstaller
 
-      - name: Prune obvious build junk from payload (keeps repo messy but bundle clean)
+      - name: Prune obvious build junk from payload
         shell: bash
         run: |
           rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
 
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
+      - name: Build Windows app
         shell: powershell
         run: |
           if (Test-Path build) { Remove-Item -Recurse -Force build }
@@ -53,19 +49,64 @@ jobs:
             --collect-all gurobipy `
             --collect-binaries gurobipy `
             --collect-submodules gurobipy `
+            --hidden-import _socket `
+            --hidden-import socket `
+            --hidden-import select `
+            --hidden-import _multiprocessing `
+            --hidden-import multiprocessing `
+            --hidden-import _queue `
+            --hidden-import _overlapped `
             --copy-metadata streamlit `
             --add-data "optimize;app" `
-            launcher.py
+            launcher.py 2>&1 | Tee-Object -FilePath pyinstaller-windows.log
           Compress-Archive -Path dist\TGECase\* -DestinationPath dist\TGECase-Windows.zip
 
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
+      - name: Verify Windows output
+        shell: powershell
+        run: |
+          if (-not (Test-Path dist\TGECase\TGECase.exe)) { throw "Windows exe not found." }
+
+      - name: Upload Windows artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TGECase-Windows
+          if-no-files-found: warn
+          path: |
+            dist/TGECase-Windows.zip
+            pyinstaller-windows.log
+
+  build-macos-intel:
+    runs-on: macos-13
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+
+      - name: Build macOS Intel app
         shell: bash
         run: |
           rm -rf build dist
           python -m PyInstaller \
             --noconfirm --clean --onedir --windowed \
             --name "TGECase" \
+            --target-arch x86_64 \
             --osx-bundle-identifier "com.tgecase.app" \
             --collect-all streamlit \
             --collect-all plotly \
@@ -78,18 +119,115 @@ jobs:
             --collect-all gurobipy \
             --collect-binaries gurobipy \
             --collect-submodules gurobipy \
+            --hidden-import _socket \
+            --hidden-import socket \
+            --hidden-import select \
+            --hidden-import _multiprocessing \
+            --hidden-import multiprocessing \
+            --hidden-import _queue \
+            --hidden-import _overlapped \
             --copy-metadata streamlit \
             --add-data "optimize:app" \
-            launcher.py
+            launcher.py 2>&1 | tee pyinstaller-macos-intel.log
 
-          # Ad-hoc sign (not notarized, but reduces some “damaged app” issues)
           codesign --force --deep --sign - dist/TGECase.app
+          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS-Intel.zip
 
-          # Zip the .app properly (DO NOT swallow errors)
-          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS.zip
+      - name: Verify macOS Intel output
+        shell: bash
+        run: |
+          test -d dist/TGECase.app
+          test -f dist/TGECase.app/Contents/MacOS/TGECase
+          test -f dist/TGECase.app/Contents/Info.plist
+          test -f dist/TGECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TGECase.app/Contents/Resources/app/Total.py
+          file dist/TGECase.app/Contents/MacOS/TGECase
+          plutil -lint dist/TGECase.app/Contents/Info.plist
+          codesign --verify --deep --strict dist/TGECase.app
 
-      - name: Upload artifacts
+      - name: Upload macOS Intel artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: TGECase-${{ runner.os }}
-          path: dist/*.zip
+          name: TGECase-macOS-Intel
+          if-no-files-found: warn
+          path: |
+            dist/TGECase-macOS-Intel.zip
+            pyinstaller-macos-intel.log
+
+  build-macos-apple-silicon:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+
+      - name: Build macOS Apple Silicon app
+        shell: bash
+        run: |
+          rm -rf build dist
+          python -m PyInstaller \
+            --noconfirm --clean --onedir --windowed \
+            --name "TGECase" \
+            --target-arch arm64 \
+            --osx-bundle-identifier "com.tgecase.app" \
+            --collect-all streamlit \
+            --collect-all plotly \
+            --collect-all altair \
+            --collect-all pydeck \
+            --collect-all pandas \
+            --collect-all numpy \
+            --collect-all scipy \
+            --collect-all geopy \
+            --collect-all gurobipy \
+            --collect-binaries gurobipy \
+            --collect-submodules gurobipy \
+            --hidden-import _socket \
+            --hidden-import socket \
+            --hidden-import select \
+            --hidden-import _multiprocessing \
+            --hidden-import multiprocessing \
+            --hidden-import _queue \
+            --hidden-import _overlapped \
+            --copy-metadata streamlit \
+            --add-data "optimize:app" \
+            launcher.py 2>&1 | tee pyinstaller-macos-arm64.log
+
+          codesign --force --deep --sign - dist/TGECase.app
+          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS-AppleSilicon.zip
+
+      - name: Verify macOS Apple Silicon output
+        shell: bash
+        run: |
+          test -d dist/TGECase.app
+          test -f dist/TGECase.app/Contents/MacOS/TGECase
+          test -f dist/TGECase.app/Contents/Info.plist
+          test -f dist/TGECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TGECase.app/Contents/Resources/app/Total.py
+          file dist/TGECase.app/Contents/MacOS/TGECase
+          plutil -lint dist/TGECase.app/Contents/Info.plist
+          codesign --verify --deep --strict dist/TGECase.app
+
+      - name: Upload macOS Apple Silicon artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TGECase-macOS-AppleSilicon
+          if-no-files-found: warn
+          path: |
+            dist/TGECase-macOS-AppleSilicon.zip
+            pyinstaller-macos-arm64.log
