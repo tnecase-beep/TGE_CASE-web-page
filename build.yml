@@ -40,7 +40,7 @@ jobs:
           if (Test-Path build) { Remove-Item -Recurse -Force build }
           if (Test-Path dist)  { Remove-Item -Recurse -Force dist }
           python -m PyInstaller `
-            --noconfirm --clean --onedir `
+            --noconfirm --clean --onedir --noconsole `
             --name "TGECase" `
             --collect-all streamlit `
             --collect-all plotly `
@@ -50,6 +50,9 @@ jobs:
             --collect-all numpy `
             --collect-all scipy `
             --collect-all geopy `
+            --collect-all gurobipy `
+            --collect-binaries gurobipy `
+            --collect-submodules gurobipy `
             --copy-metadata streamlit `
             --add-data "optimize;app" `
             launcher.py
@@ -72,6 +75,9 @@ jobs:
             --collect-all numpy \
             --collect-all scipy \
             --collect-all geopy \
+            --collect-all gurobipy \
+            --collect-binaries gurobipy \
+            --collect-submodules gurobipy \
             --copy-metadata streamlit \
             --add-data "optimize:app" \
             launcher.py

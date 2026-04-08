@@ -1,5 +1,13 @@
-import os, sys, time, socket, webbrowser, traceback
+import logging
+import os
+import socket
+import sys
+import time
+import traceback
+import webbrowser
 from pathlib import Path
+
+from error_reporting import ErrorReporter
 
 APP_NAME = "TGECase"
 HOST = "127.0.0.1"
@@ -155,29 +163,31 @@ def main():
     data_dir = get_app_data_dir()
     ed = exe_dir()
 
-    # log goes to writable location (critical for macOS .app)
-    log_path = data_dir / LOG_FILE
-    f = open(log_path, "a", encoding="utf-8")
-    sys.stdout = f
-    sys.stderr = f
+    reporter = ErrorReporter(app_name=APP_NAME, data_dir=data_dir)
+    reporter.attach_stdio()
+    reporter.install_hooks()
+    reporter.install_logging_hook()
 
-    print("\n=== TGECase launch ===")
-    print("Frozen:", is_frozen())
-    print("Exe dir:", ed)
-    print("Data dir:", data_dir)
+    os.environ["TGECASE_DATA_DIR"] = str(data_dir)
+    os.environ["TGECASE_LOG_FILE"] = str(reporter.log_path)
+    os.environ["TGECASE_REPORT_DIR"] = str(reporter.reports_dir)
+
+    reporter.log("=== TGECase launch ===")
+    reporter.log(f"Frozen: {is_frozen()}")
+    reporter.log(f"Exe dir: {ed}")
+    reporter.log(f"Data dir: {data_dir}")
 
     first = acquire_single_instance(data_dir)
     if not first:
         port = read_port(data_dir) or 8501
         webbrowser.open(f"http://{HOST}:{port}")
-        print("Another instance detected. Opened browser and exiting.")
-        f.flush()
+        reporter.log("Another instance detected. Opened browser and exiting.")
         return
 
     total_py = resolve_total_py()
     app_dir = total_py.parent  # .../app
-    print("Total.py:", total_py)
-    print("App dir:", app_dir)
+    reporter.log(f"Total.py: {total_py}")
+    reporter.log(f"App dir: {app_dir}")
 
     # Use app_dir as cwd so relative assets resolve (assets/, input files, etc.)
     try:
@@ -188,8 +198,7 @@ def main():
     port = find_free_port()
     write_port(data_dir, port)
     url = f"http://{HOST}:{port}"
-    print("Chosen port:", port)
-    f.flush()
+    reporter.log(f"Chosen port: {port}")
 
     # Streamlit config override
     os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
@@ -229,19 +238,22 @@ def main():
             "--browser.gatherUsageStats=false",
             "--global.developmentMode=false",
         ]
-        print("Starting Streamlit:", " ".join(sys.argv))
-        f.flush()
+        reporter.log(f"Starting Streamlit: {' '.join(sys.argv)}")
         stcli.main()
     except SystemExit:
-        print("Streamlit exited (SystemExit).")
+        reporter.log("Streamlit exited (SystemExit).")
     except Exception:
-        print("STREAMLIT CRASH:\n", traceback.format_exc())
+        reporter.report_exception(
+            context="launcher.main",
+            extra={"phase": "streamlit_startup"},
+        )
+        reporter.log("STREAMLIT CRASH:\n" + traceback.format_exc())
     finally:
         try:
             (data_dir / PORT_FILE).unlink(missing_ok=True)
         except Exception:
             pass
-        f.flush()
+        logging.shutdown()
 
 
 if __name__ == "__main__":
