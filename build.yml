@@ -41,7 +41,7 @@ jobs:
           if (Test-Path dist)  { Remove-Item -Recurse -Force dist }
           python -m PyInstaller `
             --noconfirm --clean --onedir --noconsole `
-            --name "TGECase" `
+            --name "TNECase" `
             --collect-all streamlit `
             --collect-all plotly `
             --collect-all altair `
@@ -56,7 +56,7 @@ jobs:
             --copy-metadata streamlit `
             --add-data "optimize;app" `
             launcher.py
-          Compress-Archive -Path dist\TGECase\* -DestinationPath dist\TGECase-Windows.zip
+          Compress-Archive -Path dist\TNECase\* -DestinationPath dist\TNECase-Windows.zip
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
@@ -65,8 +65,8 @@ jobs:
           rm -rf build dist
           python -m PyInstaller \
             --noconfirm --clean --onedir --windowed \
-            --name "TGECase" \
-            --osx-bundle-identifier "com.tgecase.app" \
+            --name "TNECase" \
+            --osx-bundle-identifier "com.tnecase.app" \
             --collect-all streamlit \
             --collect-all plotly \
             --collect-all altair \
@@ -83,13 +83,13 @@ jobs:
             launcher.py
 
           # Ad-hoc sign (not notarized, but reduces some “damaged app” issues)
-          codesign --force --deep --sign - dist/TGECase.app
+          codesign --force --deep --sign - dist/TNECase.app
 
           # Zip the .app properly (DO NOT swallow errors)
-          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS.zip
+          ditto -c -k --sequesterRsrc --keepParent dist/TNECase.app dist/TNECase-macOS.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TGECase-${{ runner.os }}
+          name: TNECase-${{ runner.os }}
           path: dist/*.zip

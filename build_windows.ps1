@@ -21,6 +21,8 @@ if (-not (Test-Path -LiteralPath $REQ)) {
 
 $VENV_PY = Join-Path $ROOT ".venv\Scripts\python.exe"
 $PYI_LOG = Join-Path $ROOT "pyinstaller_output.txt"
+$BUILD_NAME = "TNECase"
+$LEGACY_NAME = "TGECase"
 
 # --- Ensure venv ---
 if (-not (Test-Path -LiteralPath $VENV_PY)) {
@@ -47,8 +49,9 @@ try { & $PY -m pip show gurobipy | Out-Null } catch {
 }
 
 # --- Stop running app (so dist/ isn't locked) ---
-Write-Host "Stopping any running TGECase process..."
-try { Get-Process TGECase -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue } catch { }
+Write-Host "Stopping any running $BUILD_NAME/$LEGACY_NAME process..."
+try { Get-Process $BUILD_NAME -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue } catch { }
+try { Get-Process $LEGACY_NAME -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue } catch { }
 Start-Sleep -Milliseconds 300
 
 # --- Clean old build outputs ---
@@ -84,7 +87,7 @@ $pyiArgs = @(
   "--clean",
   "--onedir",
   "--noconsole",
-  "--name", "TGECase",
+  "--name", $BUILD_NAME,
   "--distpath", $DISTPATH,
   "--workpath", $WORKPATH,
 
@@ -100,6 +103,14 @@ $pyiArgs = @(
   "--collect-all", "gurobipy",
   "--collect-binaries", "gurobipy",
   "--collect-submodules", "gurobipy",
+
+  "--hidden-import", "_socket",
+  "--hidden-import", "socket",
+  "--hidden-import", "select",
+  "--hidden-import", "_multiprocessing",
+  "--hidden-import", "multiprocessing",
+  "--hidden-import", "_queue",
+  "--hidden-import", "_overlapped",
 
   "--copy-metadata", "streamlit",
 
@@ -131,14 +142,21 @@ if ($exit -ne 0) {
 }
 
 # --- Verify output exists ---
-$EXE = Join-Path $DISTPATH "TGECase\TGECase.exe"
+$EXE = Join-Path $DISTPATH "$BUILD_NAME\$BUILD_NAME.exe"
 if (-not (Test-Path -LiteralPath $EXE)) {
   throw "Build finished but exe not found at: $EXE"
 }
 
+$ZIP = Join-Path $DISTPATH "$BUILD_NAME-Windows.zip"
+if (Test-Path -LiteralPath $ZIP) {
+  Remove-Item -Force -LiteralPath $ZIP
+}
+Compress-Archive -Path (Join-Path $DISTPATH "$BUILD_NAME\*") -DestinationPath $ZIP
+
 Write-Host ""
 Write-Host "Build finished."
 Write-Host ("Run: " + $EXE)
-Write-Host "Logs and crash reports are written under: %APPDATA%\TGECase"
+Write-Host ("Zip: " + $ZIP)
+Write-Host "Logs and crash reports are written under: %APPDATA%\TGECase (compat path)"
 Write-Host "Optional remote reporting env vars: TGECASE_ERROR_REPORT_URL / _TOKEN / _SECRET"
 Write-Host ("PyInstaller output: " + $PYI_LOG)

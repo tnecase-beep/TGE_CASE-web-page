@@ -9,12 +9,14 @@ from pathlib import Path
 
 from error_reporting import ErrorReporter
 
-APP_NAME = "TGECase"
+APP_DISPLAY_NAME = "TNECase"
+APP_DATA_DIR_NAME = "TGECase"
+APP_LOG_SLUG = "tgecase"
 HOST = "127.0.0.1"
 
-PORT_FILE = "tgecase_port.txt"
-LOG_FILE = "tgecase.log"
-LOCK_FILE = "tgecase.lock"
+PORT_FILE = f"{APP_LOG_SLUG}_port.txt"
+LOG_FILE = f"{APP_LOG_SLUG}.log"
+LOCK_FILE = f"{APP_LOG_SLUG}.lock"
 
 # Windows single-instance mutex (kalsın)
 MUTEX_NAME = "Global\\TGECase_SingleInstance"
@@ -41,11 +43,11 @@ def get_app_data_dir() -> Path:
     - Linux: ~/.tgecase
     """
     if sys.platform == "darwin":
-        base = Path.home() / "Library" / "Application Support" / APP_NAME
+        base = Path.home() / "Library" / "Application Support" / APP_DATA_DIR_NAME
     elif os.name == "nt":
-        base = Path(os.environ.get("APPDATA", str(Path.home()))) / APP_NAME
+        base = Path(os.environ.get("APPDATA", str(Path.home()))) / APP_DATA_DIR_NAME
     else:
-        base = Path.home() / f".{APP_NAME.lower()}"
+        base = Path.home() / f".{APP_LOG_SLUG}"
     base.mkdir(parents=True, exist_ok=True)
     return base
 
@@ -163,7 +165,7 @@ def main():
     data_dir = get_app_data_dir()
     ed = exe_dir()
 
-    reporter = ErrorReporter(app_name=APP_NAME, data_dir=data_dir)
+    reporter = ErrorReporter(app_name=APP_DISPLAY_NAME, data_dir=data_dir)
     reporter.attach_stdio()
     reporter.install_hooks()
     reporter.install_logging_hook()
@@ -172,7 +174,7 @@ def main():
     os.environ["TGECASE_LOG_FILE"] = str(reporter.log_path)
     os.environ["TGECASE_REPORT_DIR"] = str(reporter.reports_dir)
 
-    reporter.log("=== TGECase launch ===")
+    reporter.log(f"=== {APP_DISPLAY_NAME} launch ===")
     reporter.log(f"Frozen: {is_frozen()}")
     reporter.log(f"Exe dir: {ed}")
     reporter.log(f"Data dir: {data_dir}")

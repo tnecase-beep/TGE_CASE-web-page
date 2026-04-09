@@ -1,11 +1,11 @@
-# TGE Case Packaging Kit
+# TNE Case Packaging Kit
 
 This kit assumes the main Streamlit app is `optimize/Total.py`.
 
 ## Why this works
 
 PyInstaller often struggles with large Streamlit apps because of hidden imports.  
-So we package the whole `optimize/` folder as source into `dist/TGECase/app/` and build only a small launcher executable.
+So we package the whole `optimize/` folder as source into `dist/TNECase/app/` and build only a small launcher executable.
 
 ## Windows build
 
@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 Output:
 
-- `dist\TGECase\TGECase.exe`
+- `dist\TNECase\TNECase.exe`
 - Logs: `%APPDATA%\TGECase\tgecase.log`
 - Crash reports: `%APPDATA%\TGECase\reports\`
 
@@ -35,8 +35,8 @@ Copy `build.yml` into `.github/workflows/build.yml` and trigger the workflow.
 
 Artifacts:
 
-- `TGECase-Windows.zip`
-- `TGECase-macOS.zip`
+- `TNECase-Windows.zip`
+- `TNECase-macOS.zip`
 
 ## Notes
 
