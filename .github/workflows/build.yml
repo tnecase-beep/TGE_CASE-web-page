@@ -38,17 +38,17 @@ jobs:
       - name: Verify Windows output
         shell: powershell
         run: |
-          if (-not (Test-Path dist\TGECase\TGECase.exe)) { throw "Windows exe not found." }
-          if (-not (Test-Path dist\TGECase-Windows.zip)) { throw "Windows zip not found." }
+          if (-not (Test-Path dist\TNECase\TNECase.exe)) { throw "Windows exe not found." }
+          if (-not (Test-Path dist\TNECase-Windows.zip)) { throw "Windows zip not found." }
 
       - name: Upload Windows artifacts
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: TGECase-Windows
+          name: TNECase-Windows
           if-no-files-found: warn
           path: |
-            dist/TGECase-Windows.zip
+            dist/TNECase-Windows.zip
             pyinstaller_output.txt
 
   build-macos-intel:
@@ -80,9 +80,9 @@ jobs:
           rm -rf build dist
           python -m PyInstaller \
             --noconfirm --clean --onedir --windowed \
-            --name "TGECase" \
+            --name "TNECase" \
             --target-arch x86_64 \
-            --osx-bundle-identifier "com.tgecase.app" \
+            --osx-bundle-identifier "com.tnecase.app" \
             --collect-all streamlit \
             --collect-all plotly \
             --collect-all altair \
@@ -105,28 +105,28 @@ jobs:
             --add-data "optimize:app" \
             launcher.py 2>&1 | tee pyinstaller-macos-intel.log
 
-          codesign --force --deep --sign - dist/TGECase.app
-          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS-Intel.zip
+          codesign --force --deep --sign - dist/TNECase.app
+          ditto -c -k --sequesterRsrc --keepParent dist/TNECase.app dist/TNECase-macOS-Intel.zip
 
       - name: Verify macOS Intel output
         shell: bash
         run: |
-          test -d dist/TGECase.app
-          test -f dist/TGECase.app/Contents/MacOS/TGECase
-          test -f dist/TGECase.app/Contents/Info.plist
-          test -f dist/TGECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TGECase.app/Contents/Resources/app/Total.py
-          file dist/TGECase.app/Contents/MacOS/TGECase
-          plutil -lint dist/TGECase.app/Contents/Info.plist
-          codesign --verify --deep --strict dist/TGECase.app
+          test -d dist/TNECase.app
+          test -f dist/TNECase.app/Contents/MacOS/TNECase
+          test -f dist/TNECase.app/Contents/Info.plist
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TNECase.app/Contents/Resources/app/Total.py
+          file dist/TNECase.app/Contents/MacOS/TNECase
+          plutil -lint dist/TNECase.app/Contents/Info.plist
+          codesign --verify --deep --strict dist/TNECase.app
 
       - name: Upload macOS Intel artifacts
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: TGECase-macOS-Intel
+          name: TNECase-macOS-Intel
           if-no-files-found: warn
           path: |
-            dist/TGECase-macOS-Intel.zip
+            dist/TNECase-macOS-Intel.zip
             pyinstaller-macos-intel.log
 
   build-macos-apple-silicon:
@@ -158,9 +158,9 @@ jobs:
           rm -rf build dist
           python -m PyInstaller \
             --noconfirm --clean --onedir --windowed \
-            --name "TGECase" \
+            --name "TNECase" \
             --target-arch arm64 \
-            --osx-bundle-identifier "com.tgecase.app" \
+            --osx-bundle-identifier "com.tnecase.app" \
             --collect-all streamlit \
             --collect-all plotly \
             --collect-all altair \
@@ -183,26 +183,26 @@ jobs:
             --add-data "optimize:app" \
             launcher.py 2>&1 | tee pyinstaller-macos-arm64.log
 
-          codesign --force --deep --sign - dist/TGECase.app
-          ditto -c -k --sequesterRsrc --keepParent dist/TGECase.app dist/TGECase-macOS-AppleSilicon.zip
+          codesign --force --deep --sign - dist/TNECase.app
+          ditto -c -k --sequesterRsrc --keepParent dist/TNECase.app dist/TNECase-macOS-AppleSilicon.zip
 
       - name: Verify macOS Apple Silicon output
         shell: bash
         run: |
-          test -d dist/TGECase.app
-          test -f dist/TGECase.app/Contents/MacOS/TGECase
-          test -f dist/TGECase.app/Contents/Info.plist
-          test -f dist/TGECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TGECase.app/Contents/Resources/app/Total.py
-          file dist/TGECase.app/Contents/MacOS/TGECase
-          plutil -lint dist/TGECase.app/Contents/Info.plist
-          codesign --verify --deep --strict dist/TGECase.app
+          test -d dist/TNECase.app
+          test -f dist/TNECase.app/Contents/MacOS/TNECase
+          test -f dist/TNECase.app/Contents/Info.plist
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TNECase.app/Contents/Resources/app/Total.py
+          file dist/TNECase.app/Contents/MacOS/TNECase
+          plutil -lint dist/TNECase.app/Contents/Info.plist
+          codesign --verify --deep --strict dist/TNECase.app
 
       - name: Upload macOS Apple Silicon artifacts
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: TGECase-macOS-AppleSilicon
+          name: TNECase-macOS-AppleSilicon
           if-no-files-found: warn
           path: |
-            dist/TGECase-macOS-AppleSilicon.zip
+            dist/TNECase-macOS-AppleSilicon.zip
             pyinstaller-macos-arm64.log
