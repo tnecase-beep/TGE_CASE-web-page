@@ -7,7 +7,7 @@ import traceback
 import webbrowser
 from pathlib import Path
 
-from error_reporting import ErrorReporter
+from error_reporting import ErrorReporter, get_reporter
 
 APP_DISPLAY_NAME = "TNECase"
 APP_DATA_DIR_NAME = "TGECase"
@@ -165,12 +165,14 @@ def main():
     data_dir = get_app_data_dir()
     ed = exe_dir()
 
-    reporter = ErrorReporter(app_name=APP_DISPLAY_NAME, data_dir=data_dir)
-    reporter.attach_stdio()
-    reporter.install_hooks()
-    reporter.install_logging_hook()
-
     os.environ["TGECASE_DATA_DIR"] = str(data_dir)
+    reporter = get_reporter(app_name=APP_DISPLAY_NAME)
+    reporter.data_dir = data_dir
+    reporter.log_path = data_dir / "tgecase.log"
+    reporter.reports_dir = data_dir / "reports"
+    reporter.reports_dir.mkdir(parents=True, exist_ok=True)
+    reporter.attach_stdio()   # redirect stdout/stderr to log file (local only)
+
     os.environ["TGECASE_LOG_FILE"] = str(reporter.log_path)
     os.environ["TGECASE_REPORT_DIR"] = str(reporter.reports_dir)
 
