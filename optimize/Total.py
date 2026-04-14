@@ -50,7 +50,7 @@ from Scenario_Setting_For_SC2F import run_scenario as run_SC2F
 from MASTER import run_scenario_master
 from collections import defaultdict
 
-
+st.error("test error reporting")
 
 # Toggle Gamification Mode on/off via env var:
 #   ENABLE_GAMIFICATION=1 (default) -> shows Gamification Mode
