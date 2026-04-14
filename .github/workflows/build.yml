@@ -39,7 +39,16 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path dist\TNECase\TNECase.exe)) { throw "Windows exe not found." }
+          if (-not (Test-Path dist\TNECase\_internal\app\Total.py)) { throw "Windows app payload not found." }
           if (-not (Test-Path dist\TNECase-Windows.zip)) { throw "Windows zip not found." }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path dist\TNECase-Windows.zip))
+          try {
+            $hasTotal = $zip.Entries | Where-Object { $_.FullName -eq "_internal/app/Total.py" -or $_.FullName -eq "_internal\app\Total.py" } | Select-Object -First 1
+            if (-not $hasTotal) { throw "Windows zip payload missing _internal/app/Total.py." }
+          } finally {
+            $zip.Dispose()
+          }
 
       - name: Upload Windows artifacts
         if: always()
