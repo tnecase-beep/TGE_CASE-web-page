@@ -12,6 +12,16 @@ Created on Fri Nov 28 15:50:25 2025
 import os
 import re
 import streamlit as st
+
+# Error reporting – initialise singleton early so st.error is patched
+# before any rendering begins. Safe to import even without credentials.
+try:
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from error_reporting import get_reporter as _get_reporter
+    _get_reporter()
+except Exception:
+    pass
 import pandas as pd
 import plotly.express as px
 import streamlit.components.v1 as components
