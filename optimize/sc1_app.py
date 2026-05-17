@@ -1,7 +1,7 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Streamlit Dashboard â€“ Simplified Supply Chain Model (SC1F)
-Author: Arda AydÄ±n
+Streamlit Dashboard – Simplified Supply Chain Model (SC1F)
+Author: Arda Aydın
 """
 
 import streamlit as st
@@ -50,7 +50,7 @@ components.html(f"""
     `;
     targetDoc.head.appendChild(s2);
 
-    console.log("GA injected into TOP WINDOW â†’ OK");
+    console.log("GA injected into TOP WINDOW → OK");
 
 }})();
 </script>
@@ -60,9 +60,9 @@ components.html(f"""
 
 
 # ----------------------------------------------------
-# ğŸŒ CACHED DATA LOADERS 
+# 🌐 CACHED DATA LOADERS 
 # ----------------------------------------------------
-@st.cache_data(show_spinner="ğŸ“¡ Fetching data from GitHub...")
+@st.cache_data(show_spinner="📡 Fetching data from GitHub...")
 def load_excel_from_github(url: str):
     """Load all Excel sheets into a dict of DataFrames (pickle-safe)."""
     response = requests.get(url)
@@ -82,7 +82,7 @@ def format_number(value, x):
 
 
 # ----------------------------------------------------
-# âš ï¸ BIG WARNING POP-UP (UNSATISFIED DEMAND)
+# ⚠️ BIG WARNING POP-UP (UNSATISFIED DEMAND)
 # ----------------------------------------------------
 def _safe_float(x, default=0.0):
     """Robust float conversion (handles NaN, strings with comma decimals, and %)."""
@@ -176,7 +176,7 @@ def inject_big_warning_popup(title: str, lines):
       <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start;">
         <div>
           <div style="font-size: 32px; font-weight: 900; color:#b71c1c; line-height: 1.1;">
-            âš ï¸ ${title_js}
+            ⚠️ ${title_js}
           </div>
           <div style="margin-top: 14px; font-size: 18px; color:#111; line-height: 1.55;">
             ${body_js}
@@ -191,7 +191,7 @@ def inject_big_warning_popup(title: str, lines):
           padding: 10px 14px;
           border-radius: 12px;
           cursor: pointer;
-        ">Close âœ•</button>
+        ">Close ✕</button>
       </div>
       <div style="margin-top: 18px; font-size: 14px; color:#444;">
         Visualizations below still show the closest scenario. This warning appears when the scenario cannot satisfy total demand.
@@ -211,12 +211,12 @@ def inject_big_warning_popup(title: str, lines):
 
 def resolve_local_path(*parts: str) -> str:
     """
-    Dev ortamÄ±nda ve PyInstaller iÃ§inde Ã§alÄ±ÅŸan, data dosyasÄ± bulucu.
+    Dev ortamında ve PyInstaller içinde çalışan, data dosyası bulucu.
     """
     base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
     candidates = [
         base.joinpath(*parts),                 # _MEIPASS/single_page/...
-        base.joinpath("app", *parts),          # _MEIPASS/app/single_page/...  (optimize;app kullandÄ±ysan)
+        base.joinpath("app", *parts),          # _MEIPASS/app/single_page/...  (optimize;app kullandıysan)
         Path(__file__).resolve().parent.joinpath(*parts),
         Path(__file__).resolve().parent.joinpath("single_page", *parts),
         Path.cwd().joinpath(*parts),
@@ -237,12 +237,12 @@ def run_sc1():
     #     initial_sidebar_state="expanded"
     # )
     
-    st.title("ğŸ­ Scenario 1: Service Speed vs. Emission Reductions")
+    st.title("🏭 Scenario 1: Service Speed vs. Emission Reductions")
     
     
     
     GITHUB_XLSX_URL = (
-        "https://raw.githubusercontent.com/aydÄ±narda/TGE_CASE-web-page/main/single_page/"
+        "https://raw.githubusercontent.com/aydınarda/TGE_CASE-web-page/main/single_page/"
         "simulation_results_demand_levels.xlsx"
     )
     LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levels.xlsx")
@@ -255,19 +255,19 @@ def run_sc1():
             excel_data = load_excel_from_github(GITHUB_XLSX_URL)
         sheet_names = [s for s in excel_data.keys() if s.startswith("Array_")]
         if not sheet_names:
-            st.error("âŒ No sheets starting with 'Array_' found.")
+            st.error("❌ No sheets starting with 'Array_' found.")
             st.stop()
 
     except Exception as e:
-        st.error(f"âŒ Failed to load Excel file: {e}")
+        st.error(f"❌ Failed to load Excel file: {e}")
         st.stop()
     
     # ----------------------------------------------------
     # SIDEBAR CONTROLS (SC2-style layout)
     # ----------------------------------------------------
-    # st.sidebar.header("ğŸ“¦ Demand Level (%)")
+    # st.sidebar.header("📦 Demand Level (%)")
 
-    # Extract numeric levels automatically (e.g., Array_90% â†’ 90)
+    # Extract numeric levels automatically (e.g., Array_90% → 90)
     levels = sorted(
         [int(re.findall(r"\d+", name)[0]) for name in sheet_names],
         reverse=True
@@ -287,7 +287,7 @@ def run_sc1():
     # ----------------------------------------------------
     # FILTER PARAMETERS (SC2-style layout)
     # ----------------------------------------------------
-    st.sidebar.header("ğŸ›ï¸ Filter Parameters")
+    st.sidebar.header("🎛️ Filter Parameters")
     
     
     # Load selected sheet
@@ -315,7 +315,7 @@ def run_sc1():
         
         if "Unit_penaltycost" in subset.columns:
             penalty_selected = st.select_slider(
-                "Penalty Cost (â‚¬/unit)",
+                "Penalty Cost (€/unit)",
                 options=sorted(subset["Unit_penaltycost"].unique()),
                 value=subset["Unit_penaltycost"].iloc[0]
             )
@@ -343,7 +343,7 @@ def run_sc1():
     
         
         # ----------------------------------------------------
-        # DETECT COâ‚‚ REDUCTION COLUMN AUTOMATICALLY
+        # DETECT CO₂ REDUCTION COLUMN AUTOMATICALLY
         # ----------------------------------------------------
         possible_co2_cols = [
             c for c in subset.columns
@@ -354,32 +354,32 @@ def run_sc1():
             co2_col = possible_co2_cols[0]
         else:
             st.error(
-                "âŒ Could not find any COâ‚‚-related percentage column. "
+                "❌ Could not find any CO₂-related percentage column. "
                 "Make sure one of the columns includes terms like 'CO2', 'Reduction', or '%'."
             )
             st.stop()
         
         # Create slider for CO2 Reduction %
-        # Create slider for COâ‚‚ Reduction %
+        # Create slider for CO₂ Reduction %
         # ----------------------------------------------------
-        # COâ‚‚ REDUCTION SLIDER (0â€“100% visual, internal 0â€“1)
+        # CO₂ REDUCTION SLIDER (0–100% visual, internal 0–1)
         # ----------------------------------------------------
         default_val = float(subset[co2_col].mean()) if co2_col in subset.columns else 0.25
         
-        # âœ… Always start from 0% COâ‚‚ reduction
+        # ✅ Always start from 0% CO₂ reduction
         default_val = 0.0  # (fractional form, 0.0 = 0%)
         
         co2_pct_display = st.slider(
             "Emission Reduction Target (%)",
             min_value=0,
             max_value=100,
-            value=int(default_val * 100),  # âœ… default = 0%
+            value=int(default_val * 100),  # ✅ default = 0%
             step=1,
-            help="Set a Emission Reduction Target between 0â€“100 %.",
+            help="Set a Emission Reduction Target between 0–100 %.",
         )
         st.form_submit_button("Search")
     
-    # Convert displayed percentage back to 0â€“1 for internal matching
+    # Convert displayed percentage back to 0–1 for internal matching
     co2_pct = co2_pct_display / 100.0
     
     # ----------------------------------------------------
@@ -392,11 +392,11 @@ def run_sc1():
     if (subset[co2_col] - co2_pct).abs().min() >= 1e-6:
         closest_val = _safe_float_local(closest.get(co2_col, co2_pct), co2_pct)
         st.sidebar.warning(
-            f"âš ï¸ No exact match for COâ‚‚ target {co2_pct_display}%. Showing closest scenario at {closest_val*100:.0f}%."
+            f"⚠️ No exact match for CO₂ target {co2_pct_display}%. Showing closest scenario at {closest_val*100:.0f}%."
         )
 
         # ----------------------------------------------------
-    # ğŸš¨ DEMAND SATISFACTION CHECK (NO POP-UP)
+    # 🚨 DEMAND SATISFACTION CHECK (NO POP-UP)
     #   Note: UNS metrics live in Demand_* sheets (not Array_* sheets).
     # ----------------------------------------------------
     # Initialize to avoid UnboundLocalError in every branch
@@ -461,18 +461,18 @@ def run_sc1():
         if used_uns or unmet_units > 1e-6 or satisfied_pct < 0.999999:
             sat_pct_disp = max(0.0, min(1.0, satisfied_pct)) * 100.0
             st.error(
-                f"âš ï¸ Capacity is insufficient; only {sat_pct_disp:.2f}% satisfied on average. Youâ€™re losing market share!"
+                f"⚠️ Capacity is insufficient; only {sat_pct_disp:.2f}% satisfied on average. You’re losing market share!"
             )
             """
             st.error(
-                f"âš ï¸ Demand NOT fully satisfied: {satisfied_units:,.0f}/{total_demand_units:,.0f} units "
+                f"⚠️ Demand NOT fully satisfied: {satisfied_units:,.0f}/{total_demand_units:,.0f} units "
                 f""
             )
             """
     else:
         # Do not block visuals; just inform once
         """st.warning(
-            "âš ï¸ Demand satisfaction metrics are not available in this Excel output for the selected scenario. "
+            "⚠️ Demand satisfaction metrics are not available in this Excel output for the selected scenario. "
             "Please regenerate/upload results that include UNS metrics. "
             "No demand satisfaction columns were found for the selected scenario."
         )"""
@@ -482,9 +482,9 @@ def run_sc1():
     # ----------------------------------------------------
     CLOSEST_SCENARIO_DETAILS = False  # Set to False to hide the closest scenario details section
     if CLOSEST_SCENARIO_DETAILS:
-        st.subheader("ğŸ“Š Closest Scenario Details")
+        st.subheader("📊 Closest Scenario Details")
         
-        closest_df = closest.to_frame().T  # transpose for rowâ†’column view
+        closest_df = closest.to_frame().T  # transpose for row→column view
         
         # Remove columns starting with 'f'
         cols_to_show = [c for c in closest_df.columns if not c.lower().startswith("f")]
@@ -495,11 +495,11 @@ def run_sc1():
     col1, col2, col3, col4 = st.columns(4)
     
     col1.metric(
-        "Total Cost (â‚¬)",
+        "Total Cost (€)",
         f"{(closest['Total Cost'] if 'Total Cost' in closest else closest.get('Objective_value', 0)):,.0f}"
     )
     col2.metric(
-        "Total COâ‚‚ (tons)",
+        "Total CO₂ (tons)",
         f"{(closest['Total Emissions'] if 'Total Emissions' in closest else closest.get('CO2_Total', 0)):,.2f}"
     )
     
@@ -522,13 +522,13 @@ def run_sc1():
     else:
         tr_total = None
     
-    col3.metric("Inventory Total (â‚¬)", f"{inv_total:,.0f}" if inv_total is not None else "N/A")
-    col4.metric("Transport Total (â‚¬)", f"{tr_total:,.0f}" if tr_total is not None else "N/A")
+    col3.metric("Inventory Total (€)", f"{inv_total:,.0f}" if inv_total is not None else "N/A")
+    col4.metric("Transport Total (€)", f"{tr_total:,.0f}" if tr_total is not None else "N/A")
 
     # ----------------------------------------------------
-    # ğŸ†• COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
+    # 🆕 COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
     # ----------------------------------------------------
-    st.markdown("## ğŸ’¶ Emissions vs Total Cost ")
+    st.markdown("## 💶 Emissions vs Total Cost ")
     
     @st.cache_data(show_spinner=False)
     def generate_cost_emission_chart_plotly_dynamic(df_sheet: pd.DataFrame, selected_value: float):
@@ -559,7 +559,7 @@ def run_sc1():
         fig.add_trace(go.Scatter(
             x=df_chart[co2_col],
             y=df_chart["Cost (M)"],
-            name="Total Cost (million â‚¬)",
+            name="Total Cost (million €)",
             mode="lines+markers",
             line=dict(color="red", width=2, dash="dot"),
             marker=dict(size=6, color="red"),
@@ -585,12 +585,12 @@ def run_sc1():
             template="plotly_white",
             title=dict(text="<b>Cost vs. Emissions</b>", x=0.45, font=dict(color="firebrick", size=20)),
             xaxis=dict(
-                title="COâ‚‚ Reduction (%)",
+                title="CO₂ Reduction (%)",
                 tickformat=".0%",
                 showgrid=False
             ),
             yaxis=dict(title="Emissions (thousand)", side="left", showgrid=False),
-            yaxis2=dict(title="Cost (million â‚¬)", overlaying="y", side="right", showgrid=False),
+            yaxis2=dict(title="Cost (million €)", overlaying="y", side="right", showgrid=False),
             legend=dict(orientation="h", y=-0.25, x=0.3),
             margin=dict(l=40, r=40, t=60, b=60),
             height=450
@@ -606,16 +606,16 @@ def run_sc1():
     # ----------------------------------------------------
     # COST vs EMISSION PLOT
     # ----------------------------------------------------
-    st.markdown("## ğŸ“ˆ Emissions vs Cost Elements ")
+    st.markdown("## 📈 Emissions vs Cost Elements ")
     
     cost_metric_map = {
-        "Total Cost (â‚¬)": "Objective_value" if "Objective_value" in df.columns else "Total Cost",
-        "Inventory Cost (â‚¬)": (
+        "Total Cost (€)": "Objective_value" if "Objective_value" in df.columns else "Total Cost",
+        "Inventory Cost (€)": (
             ["Inventory_L1", "Inventory_L2", "Inventory_L3"]
             if any(c in df.columns for c in ["Inventory_L1", "Inventory_L2", "Inventory_L3"])
             else ["Transit Inventory Cost"]
         ),
-        "Transport Cost (â‚¬)": (
+        "Transport Cost (€)": (
             ["Transport_L1", "Transport_L2", "Transport_L3"]
             if any(c in df.columns for c in ["Transport_L1", "Transport_L2", "Transport_L3"])
             else ["Transportation Cost"]
@@ -642,7 +642,7 @@ def run_sc1():
                     errors="coerce"
                 ).fillna(0)
         else:
-            st.warning(f"âš ï¸ Could not find any columns for {selected_metric_label}.")
+            st.warning(f"⚠️ Could not find any columns for {selected_metric_label}.")
             st.stop()
     else:
         filtered["Selected_Cost"] = filtered[metric_cols]
@@ -659,7 +659,7 @@ def run_sc1():
         template="plotly_white",
         color_continuous_scale="Viridis",
         labels={"CO2 Reduction % Display": "CO2 Reduction %"},
-        title=f"{selected_metric_label} vs COâ‚‚ Emissions ({selected_sheet})",
+        title=f"{selected_metric_label} vs CO₂ Emissions ({selected_sheet})",
     )
     fig.update_coloraxes(colorbar=dict(ticksuffix="%"))
     
@@ -697,13 +697,13 @@ def run_sc1():
             closest_demand = df_demand.iloc[closest_idx]
 
     # ----------------------------------------------------
-    # ğŸ’°ğŸŒ¿ COST & EMISSION DISTRIBUTION SECTION
+    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION
     # ----------------------------------------------------
-    st.markdown("## ğŸ’° Cost and ğŸŒ¿ Emission Distribution")
+    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
     
     colB, colC = st.columns(2)
     
-    # --- 2ï¸âƒ£ Cost Distribution ---
+    # --- 2️⃣ Cost Distribution ---
     with colB:
         st.subheader("Cost Distribution")
     
@@ -730,21 +730,21 @@ def run_sc1():
         )
     
         fig_cost_dist.update_traces(
-            texttemplate="%{text:.2f} Mâ‚¬",
+            texttemplate="%{text:.2f} M€",
             textposition="outside"
         )
         fig_cost_dist.update_layout(
             template="plotly_white",
             showlegend=False,
             xaxis_tickangle=-35,
-            yaxis_title="Million â‚¬",
+            yaxis_title="Million €",
             height=400,
             yaxis_tickformat=".2f"
         )
     
         st.plotly_chart(fig_cost_dist, use_container_width=True)
     
-    # --- 3ï¸âƒ£ Emission Distribution ---
+    # --- 3️⃣ Emission Distribution ---
     with colC:
         st.subheader("Emission Distribution")
 
@@ -810,7 +810,7 @@ def run_sc1():
                 template="plotly_white",
                 showlegend=False,
                 xaxis_tickangle=-35,
-                yaxis_title="Tons of COâ‚‚",
+                yaxis_title="Tons of CO₂",
                 height=400,
                 yaxis_tickformat=","
             )
@@ -820,9 +820,9 @@ def run_sc1():
 
     
     # ----------------------------------------------------
-    # ğŸ­ PRODUCTION OUTBOUND PIE CHART (f1 only)
+    # 🏭 PRODUCTION OUTBOUND PIE CHART (f1 only)
     # ----------------------------------------------------
-    st.markdown("## ğŸ­ Production Sourcing Breakdown")
+    st.markdown("## 🏭 Production Sourcing Breakdown")
 
     # --- Helper: safe float conversion ---
     def _safe_float_local(x):
@@ -898,30 +898,30 @@ def run_sc1():
         margin=dict(l=20, r=20, t=40, b=20)
     )
     
-    # --- Display chart, outbound table, and static COâ‚‚ table side by side ---
+    # --- Display chart, outbound table, and static CO₂ table side by side ---
     colA, colB, colC = st.columns([2, 1, 1])
     
     with colA:
         st.plotly_chart(fig_prod, use_container_width=True)
     
     with colB:
-        st.markdown("#### ğŸ“¦ Production Sourcing")
+        st.markdown("#### 📦 Production Sourcing")
         st.dataframe(df_prod.round(2), use_container_width=True)
     
     with colC:
-        st.markdown("#### ğŸŒ¿ COâ‚‚ Factors (kg COâ‚‚/unit)")
+        st.markdown("#### 🌿 CO₂ Factors (kg CO₂/unit)")
         co2_factors_mfg = pd.DataFrame({
             "From mfg": ["Taiwan", "Shanghai"],
-            "COâ‚‚ kg/unit": [6.3, 9.8]
+            "CO₂ kg/unit": [6.3, 9.8]
         })
-        co2_factors_mfg["COâ‚‚ kg/unit"] = co2_factors_mfg["COâ‚‚ kg/unit"].map(lambda v: f"{v:.1f}")
+        co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
         st.dataframe(co2_factors_mfg, use_container_width=True)
     
     
     # ----------------------------------------------------
-    # ğŸšš CROSSDOCK OUTBOUND PIE CHART (f2 only)
+    # 🚚 CROSSDOCK OUTBOUND PIE CHART (f2 only)
     # ----------------------------------------------------
-    st.markdown("## ğŸšš Crossdock Outbound Breakdown")
+    st.markdown("## 🚚 Crossdock Outbound Breakdown")
 
     # --- Crossdocks in SC1F ---
     crossdocks = ["Vienna", "Gdansk", "Paris"]
@@ -983,9 +983,9 @@ def run_sc1():
     
     
     # ----------------------------------------------------
-    # ğŸŒ SUPPLY CHAIN MAP
+    # 🌍 SUPPLY CHAIN MAP
     # ----------------------------------------------------
-    st.markdown("## ğŸŒ Global Supply Chain Network")
+    st.markdown("## 🌍 Global Supply Chain Network")
     
     plants = pd.DataFrame({
     "Type": ["Plant", "Plant"],
@@ -1046,9 +1046,9 @@ def run_sc1():
     st.plotly_chart(fig_map, use_container_width=True)
     
     # ----------------------------------------------------
-    # ğŸš¢âœˆï¸ğŸš› FLOW SUMMARY (using LayerX naming)
+    # 🚢✈️🚛 FLOW SUMMARY (using LayerX naming)
     # ----------------------------------------------------
-    st.markdown("## ğŸšš Transport Flows by Mode")
+    st.markdown("## 🚚 Transport Flows by Mode")
 
     # --- Helper: read a value from the scenario row using multiple possible column names ---
     def get_value_safe_any(keys):
@@ -1076,44 +1076,44 @@ def run_sc1():
     L3_AIR   = ["Layer3Air", "Layer3air"]
     L3_ROAD  = ["Layer3Road", "Layer3road"]
 
-    # --- Layer 1: Plants â†’ Cross-docks (Air/Water only) ---
-    st.markdown("### Plants â†’ Cross-docks")
+    # --- Layer 1: Plants → Cross-docks (Air/Water only) ---
+    st.markdown("### Plants → Cross-docks")
     col1, col2 = st.columns(2)
     l1_water = get_value_safe_any(L1_WATER)
     l1_air = get_value_safe_any(L1_AIR)
-    col1.metric("ğŸš¢ Water", f"{l1_water:,.0f} units")
-    col2.metric("âœˆï¸ Air", f"{l1_air:,.0f} units")
+    col1.metric("🚢 Water", f"{l1_water:,.0f} units")
+    col2.metric("✈️ Air", f"{l1_air:,.0f} units")
     if (l1_water + l1_air) == 0:
         st.info("No transport activity recorded for this layer.")
     st.markdown("---")
 
-    # --- Layer 2: Cross-docks â†’ DCs ---
-    st.markdown("### Cross-docks â†’ DCs")
+    # --- Layer 2: Cross-docks → DCs ---
+    st.markdown("### Cross-docks → DCs")
     col1, col2, col3 = st.columns(3)
     l2_water = get_value_safe_any(L2_WATER)
     l2_air = get_value_safe_any(L2_AIR)
     l2_road = get_value_safe_any(L2_ROAD)
-    col1.metric("ğŸš¢ Water", f"{l2_water:,.0f} units")
-    col2.metric("âœˆï¸ Air", f"{l2_air:,.0f} units")
-    col3.metric("ğŸš› Road", f"{l2_road:,.0f} units")
+    col1.metric("🚢 Water", f"{l2_water:,.0f} units")
+    col2.metric("✈️ Air", f"{l2_air:,.0f} units")
+    col3.metric("🚛 Road", f"{l2_road:,.0f} units")
     if (l2_water + l2_air + l2_road) == 0:
         st.info("No transport activity recorded for this layer.")
     st.markdown("---")
 
-    # --- Layer 3: DCs â†’ Retailer Hubs ---
-    st.markdown("### DCs â†’ Retailer Hubs")
+    # --- Layer 3: DCs → Retailer Hubs ---
+    st.markdown("### DCs → Retailer Hubs")
     col1, col2, col3 = st.columns(3)
     l3_water = get_value_safe_any(L3_WATER)
     l3_air = get_value_safe_any(L3_AIR)
     l3_road = get_value_safe_any(L3_ROAD)
-    col1.metric("ğŸš¢ Water", f"{l3_water:,.0f} units")
-    col2.metric("âœˆï¸ Air", f"{l3_air:,.0f} units")
-    col3.metric("ğŸš› Road", f"{l3_road:,.0f} units")
+    col1.metric("🚢 Water", f"{l3_water:,.0f} units")
+    col2.metric("✈️ Air", f"{l3_air:,.0f} units")
+    col3.metric("🚛 Road", f"{l3_road:,.0f} units")
     if (l3_water + l3_air + l3_road) == 0:
         st.info("No transport activity recorded for this layer.")
     st.markdown("---")
     # ----------------------------------------------------
     # RAW DATA VIEW
     # ----------------------------------------------------
-    with st.expander("ğŸ“„ Show Full Data Table"):
+    with st.expander("📄 Show Full Data Table"):
         st.dataframe(df.head(500), use_container_width=True)
