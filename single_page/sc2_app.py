@@ -904,7 +904,7 @@ def run_sc2():
     
     with colB:
         st.markdown("#### 📦 Production Sourcing")
-        st.dataframe(df_prod.round(2), use_container_width=True)
+        st.dataframe(df_prod.round(2).style.hide(axis="index"), use_container_width=True)
     
     with colC:
         st.markdown("#### 🌿 CO₂ Factors (kg/unit)")
@@ -913,7 +913,7 @@ def run_sc2():
             "CO₂ kg/unit": [6.3, 9.8, 3.2, 2.8, 4.6, 5.8, 6.2 ],
         })
         co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
-        st.dataframe(co2_factors_mfg, use_container_width=True)
+        st.dataframe(co2_factors_mfg.style.hide(axis="index"), use_container_width=True)
     
     
     # ----------------------------------------------------
@@ -993,7 +993,7 @@ def run_sc2():
     
         with colD:
             st.markdown("#### 🚚 Crossdock Outbounds")
-            st.dataframe(df_crossdock.round(2), use_container_width=True)
+            st.dataframe(df_crossdock.round(2).style.hide(axis="index"), use_container_width=True)
     
     
         
