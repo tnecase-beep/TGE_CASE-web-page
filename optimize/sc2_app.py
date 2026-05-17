@@ -278,72 +278,64 @@ def run_sc2():
     # ----------------------------------------------------
     # SIDEBAR FILTERS (simplified)
     # ----------------------------------------------------
-    st.sidebar.header("🎛️ Filter Parameters")
-    
-    # 🎯 CO₂ reduction slider (0.00–1.00 = 0–100%)
-    # 🎯 CO₂ reduction slider (0–100% visual, internal 0–1)
-    default_val = float(df["CO2_percentage"].mean()) if "CO2_percentage" in df.columns else 0.5
-    
-    # ✅ Always start from 0% CO₂ reduction
-    default_val = 0.0  # (fractional form, 0.0 = 0%)
-    
-    co2_pct_display = st.sidebar.slider(
-        "Emission Reduction Target (%)",
-        min_value=0,
-        max_value=100,
-        value=int(default_val * 100),  # ✅ default = 0%
-        step=1,
-        help="Set a Emission Reduction Target between 0–100 %.",
-    )
-    
-    # Convert displayed percentage back to 0–1 for internal matching
-    co2_pct = co2_pct_display / 100.0
-    
-    
-    # 🎯 Carbon price selector (work with either column name)
-    co2_cost_options = [20, 40, 60, 80, 100, 1000, 10000, 100000]  # €/ton
-    co2_cost = st.sidebar.select_slider(
-        "Carbon price in Europe (€ per ton)",
-        options=co2_cost_options,
-        value=60,
-        help="Select the EU carbon price column value."
-    )
+    st.sidebar.header(“🎛️ Filter Parameters”)
 
-    # 🎛️ Sourcing Cost Surcharge (Asia only) — optional if present in dataset
-    # Teaching note UI: We call the Sourcing Cost Multiplier “Sourcing Cost Surcharge”; a sliding bar
-    # from 100% to 300%, 50% increments. Internally this maps to a multiplier of 1.0–3.0.
-    scm_col = next((c for c in df.columns if "sourcing" in c.lower() and "multiplier" in c.lower()), None)
-    if scm_col is not None:
-        scm_values = sorted(pd.to_numeric(df[scm_col], errors="coerce").dropna().unique().tolist())
-        if scm_values:
-            selected_surcharge_pct = st.sidebar.slider(
-                "Sourcing Cost Surcharge (%)",
+    default_val = 0.0
+    scm_col = next((c for c in df.columns if “sourcing” in c.lower() and “multiplier” in c.lower()), None)
+    scm_values = sorted(pd.to_numeric(df[scm_col], errors=”coerce”).dropna().unique().tolist()) if scm_col is not None else []
+
+    with st.sidebar.form(“filter_params_sc2”):
+        co2_pct_display = st.slider(
+            “Emission Reduction Target (%)”,
+            min_value=0,
+            max_value=100,
+            value=int(default_val * 100),
+            step=1,
+            help=”Set a Emission Reduction Target between 0–100 %.”,
+        )
+
+        co2_cost_options = [20, 40, 60, 80, 100, 1000, 10000, 100000]
+        co2_cost = st.select_slider(
+            “Carbon price in Europe (€ per ton)”,
+            options=co2_cost_options,
+            value=60,
+            help=”Select the EU carbon price column value.”
+        )
+
+        if scm_col is not None and scm_values:
+            selected_surcharge_pct = st.slider(
+                “Sourcing Cost Surcharge (%)”,
                 min_value=100,
                 max_value=300,
                 value=100,
                 step=50,
-                help="Applies only to Asia (Taiwan/Shanghai) sourcing costs."
+                help=”Applies only to Asia (Taiwan/Shanghai) sourcing costs.”
             )
-            requested_multiplier = selected_surcharge_pct / 100.0
+        else:
+            selected_surcharge_pct = 100
 
-            # Use exact multiplier if available; otherwise snap to the closest available value in the dataset
-            closest_multiplier = min(scm_values, key=lambda x: abs(x - requested_multiplier))
-            df_scm = df[df[scm_col] == closest_multiplier].copy()
+        st.form_submit_button(“🔍 Search”)
 
-            if df_scm.empty:
-                st.warning("⚠️ No scenarios match this sourcing surcharge — showing all instead.")
-            else:
-                if abs(closest_multiplier - requested_multiplier) > 1e-9:
-                    st.info(
-                        f"ℹ️ This dataset doesn't include {selected_surcharge_pct:.0f}% exactly. "
-                        f"Showing the closest available surcharge: {closest_multiplier * 100:.0f}%."
-                    )
-                df = df_scm
-                # Re-derive any cached derived views on the filtered dataset
-                try:
-                    data_by_weight = preprocess(df)  # noqa: F841
-                except Exception:
-                    pass
+    co2_pct = co2_pct_display / 100.0
+
+    if scm_col is not None and scm_values:
+        requested_multiplier = selected_surcharge_pct / 100.0
+        closest_multiplier = min(scm_values, key=lambda x: abs(x - requested_multiplier))
+        df_scm = df[df[scm_col] == closest_multiplier].copy()
+
+        if df_scm.empty:
+            st.warning(“⚠️ No scenarios match this sourcing surcharge — showing all instead.”)
+        else:
+            if abs(closest_multiplier - requested_multiplier) > 1e-9:
+                st.info(
+                    f”ℹ️ This dataset doesn't include {selected_surcharge_pct:.0f}% exactly. “
+                    f”Showing the closest available surcharge: {closest_multiplier * 100:.0f}%.”
+                )
+            df = df_scm
+            try:
+                data_by_weight = preprocess(df)  # noqa: F841
+            except Exception:
+                pass
 
 
     # Decide which column the dataset uses for EU carbon price
