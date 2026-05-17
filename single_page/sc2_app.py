@@ -10,7 +10,6 @@ import plotly.express as px
 import requests
 from io import BytesIO
 import openpyxl
-import os
 import sys
 from pathlib import Path
 import streamlit.components.v1 as components
@@ -197,9 +196,9 @@ def run_sc2():
     # ----------------------------------------------------
     # 📦 DEMAND LEVEL SELECTION
     # ----------------------------------------------------
-    st.sidebar.header("📦 Demand Level (%)")
+    # st.sidebar.header("📦 Demand Level (%)")
     
-    LOCAL_XLSX_PATH = resolve_local_path("single_page", "simulation_results_demand_levelsSC2.xlsx")
+    LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levelsSC2.xlsx")
 
     available_sheets = get_sheet_names(LOCAL_XLSX_PATH)
     
@@ -208,12 +207,12 @@ def run_sc2():
     if not demand_sheets:
         demand_sheets = available_sheets
     
-    selected_demand = st.sidebar.selectbox(
-        "Demand Level (%)",
-        demand_sheets if demand_sheets else ["Default"],
-        index=0,
-        help="Select which demand level's results to visualize."
-    )
+    # Demand-level UI intentionally hidden; always default to the 100% sheet.
+    selected_demand = next((s for s in demand_sheets if str(s).strip() == "100%"), None)
+    if selected_demand is None:
+        selected_demand = next((s for s in demand_sheets if "100" in str(s)), None)
+    if selected_demand is None:
+        selected_demand = demand_sheets[0] if demand_sheets else "Default"
     
     # ----------------------------------------------------
     # LOAD DATA (local first, then fallback to GitHub)
@@ -234,7 +233,12 @@ def run_sc2():
         st.error(f"❌ Failed to load data: {e}")
         st.stop()
         
-    df_display = df.applymap(lambda x: format_number(x, 0))  # For display purposes only (keep original df for logic)
+    if isinstance(df, pd.Series):
+        df = df.to_frame().T
+    elif not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+
+    df_display = df.apply(lambda col: col.map(lambda x: format_number(x, 0)))  # For display purposes only (keep original df for logic)
 
     def format_demand_level(value, fallback_label: str = ""):
         """Return a human-friendly demand level label (e.g., '95%')."""
@@ -274,72 +278,64 @@ def run_sc2():
     # ----------------------------------------------------
     # SIDEBAR FILTERS (simplified)
     # ----------------------------------------------------
-    st.sidebar.header("🎛️ Filter Parameters")
-    
-    # 🎯 CO₂ reduction slider (0.00–1.00 = 0–100%)
-    # 🎯 CO₂ reduction slider (0–100% visual, internal 0–1)
-    default_val = float(df["CO2_percentage"].mean()) if "CO2_percentage" in df.columns else 0.5
-    
-    # ✅ Always start from 0% CO₂ reduction
-    default_val = 0.0  # (fractional form, 0.0 = 0%)
-    
-    co2_pct_display = st.sidebar.slider(
-        "CO₂ Reduction Target (%)",
-        min_value=0,
-        max_value=100,
-        value=int(default_val * 100),  # ✅ default = 0%
-        step=1,
-        help="Set a CO₂ reduction target between 0–100 %.",
-    )
-    
-    # Convert displayed percentage back to 0–1 for internal matching
-    co2_pct = co2_pct_display / 100.0
-    
-    
-    # 🎯 Carbon price selector (work with either column name)
-    co2_cost_options = [20, 40, 60, 80, 100, 1000, 10000, 100000]  # €/ton
-    co2_cost = st.sidebar.select_slider(
-        "CO₂ Price in Europe (€ per ton)",
-        options=co2_cost_options,
-        value=60,
-        help="Select the EU carbon price column value."
-    )
+    st.sidebar.header(“🎛️ Filter Parameters”)
 
-    # 🎛️ Sourcing Cost Surcharge (Asia only) — optional if present in dataset
-    # Teaching note UI: We call the Sourcing Cost Multiplier “Sourcing Cost Surcharge”; a sliding bar
-    # from 100% to 300%, 50% increments. Internally this maps to a multiplier of 1.0–3.0.
-    scm_col = next((c for c in df.columns if "sourcing" in c.lower() and "multiplier" in c.lower()), None)
-    if scm_col is not None:
-        scm_values = sorted(pd.to_numeric(df[scm_col], errors="coerce").dropna().unique().tolist())
-        if scm_values:
-            selected_surcharge_pct = st.sidebar.slider(
-                "Sourcing Cost Surcharge (%)",
+    default_val = 0.0
+    scm_col = next((c for c in df.columns if “sourcing” in c.lower() and “multiplier” in c.lower()), None)
+    scm_values = sorted(pd.to_numeric(df[scm_col], errors=”coerce”).dropna().unique().tolist()) if scm_col is not None else []
+
+    with st.sidebar.form(“filter_params_sc2”):
+        co2_pct_display = st.slider(
+            “Emission Reduction Target (%)”,
+            min_value=0,
+            max_value=100,
+            value=int(default_val * 100),
+            step=1,
+            help=”Set a Emission Reduction Target between 0–100 %.”,
+        )
+
+        co2_cost_options = [20, 40, 60, 80, 100, 1000, 10000, 100000]
+        co2_cost = st.select_slider(
+            “Carbon price in Europe (€ per ton)”,
+            options=co2_cost_options,
+            value=60,
+            help=”Select the EU carbon price column value.”
+        )
+
+        if scm_col is not None and scm_values:
+            selected_surcharge_pct = st.slider(
+                “Sourcing Cost Surcharge (%)”,
                 min_value=100,
                 max_value=300,
                 value=100,
                 step=50,
-                help="Applies only to Asia (Taiwan/Shanghai) sourcing costs."
+                help=”Applies only to Asia (Taiwan/Shanghai) sourcing costs.”
             )
-            requested_multiplier = selected_surcharge_pct / 100.0
+        else:
+            selected_surcharge_pct = 100
 
-            # Use exact multiplier if available; otherwise snap to the closest available value in the dataset
-            closest_multiplier = min(scm_values, key=lambda x: abs(x - requested_multiplier))
-            df_scm = df[df[scm_col] == closest_multiplier].copy()
+        st.form_submit_button(“🔍 Search”)
 
-            if df_scm.empty:
-                st.warning("⚠️ No scenarios match this sourcing surcharge — showing all instead.")
-            else:
-                if abs(closest_multiplier - requested_multiplier) > 1e-9:
-                    st.info(
-                        f"ℹ️ This dataset doesn't include {selected_surcharge_pct:.0f}% exactly. "
-                        f"Showing the closest available surcharge: {closest_multiplier * 100:.0f}%."
-                    )
-                df = df_scm
-                # Re-derive any cached derived views on the filtered dataset
-                try:
-                    data_by_weight = preprocess(df)  # noqa: F841
-                except Exception:
-                    pass
+    co2_pct = co2_pct_display / 100.0
+
+    if scm_col is not None and scm_values:
+        requested_multiplier = selected_surcharge_pct / 100.0
+        closest_multiplier = min(scm_values, key=lambda x: abs(x - requested_multiplier))
+        df_scm = df[df[scm_col] == closest_multiplier].copy()
+
+        if df_scm.empty:
+            st.warning(“⚠️ No scenarios match this sourcing surcharge — showing all instead.”)
+        else:
+            if abs(closest_multiplier - requested_multiplier) > 1e-9:
+                st.info(
+                    f”ℹ️ This dataset doesn't include {selected_surcharge_pct:.0f}% exactly. “
+                    f”Showing the closest available surcharge: {closest_multiplier * 100:.0f}%.”
+                )
+            df = df_scm
+            try:
+                data_by_weight = preprocess(df)  # noqa: F841
+            except Exception:
+                pass
 
 
     # Decide which column the dataset uses for EU carbon price
@@ -385,6 +381,7 @@ def run_sc2():
         st.error(
             "This solution is not feasible- even Swiss precision couldn't optimize it! Please adjust the CO2 target and parameters."
         )
+        fig_sens.update_coloraxes(colorbar=dict(ticksuffix="%"))
         st.stop()
     
     if closest.get("Status", "") not in ["OPTIMAL", 2]:
@@ -437,8 +434,7 @@ def run_sc2():
         )
 
         st.error(
-            f"⚠️ Unsatisfied demand detected: {unmet_units:,.2f} units unmet "
-            f"({sat_pct_disp:.2f}% satisfied)."
+            f"⚠️ Capacity is insufficient; only {sat_pct_disp:.2f}% satisfied on average. You’re losing market share!"
         )
 
     # ----------------------------------------------------
@@ -455,7 +451,7 @@ def run_sc2():
         cols_to_show = [c for c in closest_df.columns if not (c.lower().startswith("f") or c.lower().startswith("scenario_id"))]
     
         # Display cleaned table
-        st.write(closest_df[cols_to_show].applymap(lambda x: format_number(x, 0)))
+        st.write(closest_df[cols_to_show].apply(lambda col: col.map(lambda x: format_number(x, 0))))
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -468,7 +464,7 @@ def run_sc2():
     # ----------------------------------------------------
     # 🆕 COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
     # ----------------------------------------------------
-    st.markdown("## 💶 Emissions vs Cost ")
+    st.markdown("## 💶 Emissions vs Total Cost ")
 
     @st.cache_data(show_spinner=False)
     def generate_cost_emission_chart_plotly_dynamic(df_sheet: pd.DataFrame, selected_value: float):
@@ -588,7 +584,7 @@ def run_sc2():
     # ----------------------------------------------------
     # COST vs EMISSION SENSITIVITY PLOT
     # ----------------------------------------------------
-    st.markdown("## 📈 CO₂ Emission vs Cost ")
+    st.markdown("## 📈 Emissions vs Cost Elements")
     
     # Let user choose which cost metric to plot
     cost_metric_map = {
@@ -616,6 +612,7 @@ def run_sc2():
         y_label = selected_metric_label
     if not filtered.empty:
         # Detect which CO₂ price column exists
+        filtered["CO2 Reduction % Display"] = pd.to_numeric(filtered["CO2_percentage"], errors="coerce") * 100
         if "CO2_CostAtMfg" in filtered.columns:
             price_col = "CO2_CostAtMfg"
         elif "CO2_CostAtEU" in filtered.columns:
@@ -633,12 +630,13 @@ def run_sc2():
             filtered,
             x="CO2_Total",
             y="Selected_Cost",
-            color="CO2_percentage",
+            color="CO2 Reduction % Display",
             hover_data=hover_cols,
             title=f"{selected_metric_label} vs Total CO₂ ({price_col or 'CO₂ price'} = {co2_cost} €/ton)",
             labels={
                 "CO2_Total": "Total CO₂ Emissions (tons)",
-                "Selected_Cost": y_label
+                "Selected_Cost": y_label,
+                "CO2 Reduction % Display": "CO2 Reduction %"
             },
             color_continuous_scale="Viridis",
             template="plotly_white"
@@ -663,6 +661,159 @@ def run_sc2():
         st.plotly_chart(fig_sens, use_container_width=True)
     else:
         st.warning("No scenarios found for this exact combination to show sensitivity.")
+
+    # ----------------------------------------------------
+    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION
+    # ----------------------------------------------------
+    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
+    
+    col1, col2 = st.columns(2)
+    
+    # --- 💰 Cost Distribution (calculated as before) ---
+    with col1:
+        st.subheader("Cost Distribution")
+    
+        # --- Dynamically compute costs from model components ---
+        transport_cost = (
+            closest.get("Transport_L1", 0)
+            + closest.get("Transport_L2", 0)
+            + closest.get("Transport_L2_new", 0)
+            + closest.get("Transport_L3", 0)
+            + (6.25 * float(closest.get("Satisfied_Demand_units", 0)))
+        )
+    
+        sourcing_handling_cost = (
+            closest.get("Sourcing_L1", 0)
+            + closest.get("Handling_L2_total", 0)
+            + closest.get("Handling_L3", 0)
+        )
+    
+        co2_cost_production1 = closest.get("CO2_Manufacturing_State1", 0)
+        co2_cost_production2 = closest.get("CO2_Cost_L2_2", 0)
+        co2_cost_production = co2_cost_production1 + co2_cost_production2
+        
+        inventory_cost = (
+            closest.get("Inventory_L1", 0)
+            + closest.get("Inventory_L2", 0)
+            + closest.get("Inventory_L2_new", 0)
+            + closest.get("Inventory_L3", 0)
+        )
+    
+        cost_parts = {
+            "Transportation Cost": transport_cost,
+            "Sourcing/Handling Cost": sourcing_handling_cost,
+            "Carbon Cost in Production": co2_cost_production,
+            "Inventory Cost": inventory_cost
+        }
+    
+        df_cost_dist = pd.DataFrame({
+            "Category": list(cost_parts.keys()),
+            "Value": list(cost_parts.values())
+        })
+        df_cost_dist["Value_MEUR"] = pd.to_numeric(df_cost_dist["Value"], errors="coerce") / 1_000_000.0
+    
+        fig_cost = px.bar(
+            df_cost_dist,
+            x="Category",
+            y="Value_MEUR",
+            text="Value_MEUR",
+            color="Category",
+            color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"]
+        )
+    
+        fig_cost.update_traces(
+            texttemplate="%{text:.2f} M€",
+            textposition="outside"
+        )
+        fig_cost.update_layout(
+            template="plotly_white",
+            showlegend=False,
+            xaxis_tickangle=-35,
+            yaxis_title="Million €",
+            height=400,
+            yaxis_tickformat=".2f"
+        )
+    
+        st.plotly_chart(fig_cost, use_container_width=True)
+    
+    # --- 🌿 Emission Distribution (from recorded columns) ---
+    with col2:
+        st.subheader("Emission Distribution")
+
+        def _first_present(series: pd.Series, keys):
+            """Return the first available numeric value among candidate column names."""
+            for k in keys:
+                if k in series.index:
+                    try:
+                        v = series.get(k)
+                        if pd.notna(v):
+                            return float(v)
+                    except Exception:
+                        continue
+            return None
+
+        e_air = _first_present(closest, ["E_air", "E_Air"])
+        e_water = _first_present(closest, ["E_water", "E_Water", "E_sea", "E_Sea"])
+        e_road = _first_present(closest, ["E_road", "E_Road"])
+        e_lastmile = _first_present(closest, ["E_lastmile", "E_Lastmile", "E_LastMile"])
+        e_total = _first_present(closest, ["CO2_Total", "CO2_total", "CO2TOTAL"])
+
+        missing = []
+        if e_air is None: missing.append("E_air")
+        if e_water is None: missing.append("E_water / E_sea")
+        if e_road is None: missing.append("E_road")
+        if e_lastmile is None: missing.append("E_lastmile")
+        if e_total is None: missing.append("CO2_Total")
+
+        if missing:
+            st.warning("⚠️ Missing emission columns: " + ", ".join(missing))
+            st.info("No valid emission values found in this scenario.")
+        else:
+            corrected_E_prod = e_total - e_air - e_water - e_road - e_lastmile
+            total_transport = e_air + e_water + e_road
+
+            emission_data = {
+                "Production": corrected_E_prod,
+                "Last-mile": e_lastmile,
+                "Air": e_air,
+                "Water": e_water,
+                "Road": e_road,
+                "Total Transport": total_transport,
+            }
+
+            df_emission = pd.DataFrame({
+                "Source": list(emission_data.keys()),
+                "Emission (tons)": list(emission_data.values())
+            })
+
+            fig_emission = px.bar(
+                df_emission,
+                x="Source",
+                y="Emission (tons)",
+                text="Emission (tons)",
+                color="Source",
+                color_discrete_sequence=[
+                    "#4B8A08", "#2E8B57", "#808080", "#FFD700", "#90EE90", "#000000"
+                ]
+            )
+
+            fig_emission.update_traces(
+                texttemplate="%{text:,.2f}",
+                textposition="outside",
+                marker_line_color="black",
+                marker_line_width=0.5
+            )
+
+            fig_emission.update_layout(
+                template="plotly_white",
+                showlegend=False,
+                xaxis_tickangle=-35,
+                yaxis_title="Tons of CO₂",
+                height=400,
+                yaxis_tickformat=","
+            )
+
+            st.plotly_chart(fig_emission, use_container_width=True)
         
     # ----------------------------------------------------
     # 🏭 PRODUCTION OUTBOUND PIE CHART (f1 + f2_2)
@@ -1014,161 +1165,6 @@ def run_sc2():
     display_layer_summary("New Facilities → DCs", "f2_2", include_road=True)
     display_layer_summary("DCs → Retailer Hubs", "f3", include_road=True)
     
-    # ----------------------------------------------------
-    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION (FINAL)
-    # ----------------------------------------------------
-    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
-    
-    col1, col2 = st.columns(2)
-    
-    # --- 💰 Cost Distribution (calculated as before) ---
-    with col1:
-        st.subheader("Cost Distribution")
-    
-        # --- Dynamically compute costs from model components ---
-        transport_cost = (
-            closest.get("Transport_L1", 0)
-            + closest.get("Transport_L2", 0)
-            + closest.get("Transport_L2_new", 0)
-            + closest.get("Transport_L3", 0)
-            + (6.25 * float(closest.get("Satisfied_Demand_units", 0)))
-        )
-    
-        sourcing_handling_cost = (
-            closest.get("Sourcing_L1", 0)
-            + closest.get("Handling_L2_total", 0)
-            + closest.get("Handling_L3", 0)
-        )
-    
-        co2_cost_production1 = closest.get("CO2_Manufacturing_State1", 0)
-        co2_cost_production2 = closest.get("CO2_Cost_L2_2", 0)
-        co2_cost_production = co2_cost_production1 + co2_cost_production2
-        
-        inventory_cost = (
-            closest.get("Inventory_L1", 0)
-            + closest.get("Inventory_L2", 0)
-            + closest.get("Inventory_L2_new", 0)
-            + closest.get("Inventory_L3", 0)
-        )
-    
-        # Prepare for plot
-        cost_parts = {
-            "Transportation Cost": transport_cost,
-            "Sourcing/Handling Cost": sourcing_handling_cost,
-            "CO₂ Cost in Production": co2_cost_production,
-            "Inventory Cost": inventory_cost
-        }
-    
-        df_cost_dist = pd.DataFrame({
-            "Category": list(cost_parts.keys()),
-            "Value": list(cost_parts.values())
-        })
-    
-        fig_cost = px.bar(
-            df_cost_dist,
-            x="Category",
-            y="Value",
-            text="Value",
-            color="Category",
-            color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"]
-        )
-    
-        # ✅ Add commas for thousands separators
-        fig_cost.update_traces(
-            texttemplate="%{text:,.0f}",  # commas + 0 decimals
-            textposition="outside"
-        )
-        fig_cost.update_layout(
-            template="plotly_white",
-            showlegend=False,
-            xaxis_tickangle=-35,
-            yaxis_title="€",
-            height=400,
-            yaxis_tickformat=","  # add commas to axis
-        )
-    
-        st.plotly_chart(fig_cost, use_container_width=True)
-    
-    
-    # --- 🌿 Emission Distribution (from recorded columns) ---
-    with col2:
-        st.subheader("Emission Distribution")
-
-        def _first_present(series: pd.Series, keys):
-            """Return the first available numeric value among candidate column names."""
-            for k in keys:
-                if k in series.index:
-                    try:
-                        v = series.get(k)
-                        if pd.notna(v):
-                            return float(v)
-                    except Exception:
-                        continue
-            return None
-
-        e_air = _first_present(closest, ["E_air", "E_Air"])
-        e_water = _first_present(closest, ["E_water", "E_Water", "E_sea", "E_Sea"])
-        e_road = _first_present(closest, ["E_road", "E_Road"])
-        e_lastmile = _first_present(closest, ["E_lastmile", "E_Lastmile", "E_LastMile"])
-        e_total = _first_present(closest, ["CO2_Total", "CO2_total", "CO2TOTAL"])
-
-        missing = []
-        if e_air is None: missing.append("E_air")
-        if e_water is None: missing.append("E_water / E_sea")
-        if e_road is None: missing.append("E_road")
-        if e_lastmile is None: missing.append("E_lastmile")
-        if e_total is None: missing.append("CO2_Total")
-
-        if missing:
-            st.warning("⚠️ Missing emission columns: " + ", ".join(missing))
-            st.info("No valid emission values found in this scenario.")
-        else:
-            # --- Recalculate Production Emissions from totals (keeps dataset untouched) ---
-            corrected_E_prod = e_total - e_air - e_water - e_road - e_lastmile
-            total_transport = e_air + e_water + e_road
-
-            emission_data = {
-                "Production": corrected_E_prod,
-                "Last-mile": e_lastmile,
-                "Air": e_air,
-                "Water": e_water,
-                "Road": e_road,
-                "Total Transport": total_transport,
-            }
-
-            df_emission = pd.DataFrame({
-                "Source": list(emission_data.keys()),
-                "Emission (tons)": list(emission_data.values())
-            })
-
-            fig_emission = px.bar(
-                df_emission,
-                x="Source",
-                y="Emission (tons)",
-                text="Emission (tons)",
-                color="Source",
-                color_discrete_sequence=[
-                    "#4B8A08", "#2E8B57", "#808080", "#FFD700", "#90EE90", "#000000"
-                ]
-            )
-
-            fig_emission.update_traces(
-                texttemplate="%{text:,.2f}",
-                textposition="outside",
-                marker_line_color="black",
-                marker_line_width=0.5
-            )
-
-            fig_emission.update_layout(
-                template="plotly_white",
-                showlegend=False,
-                xaxis_tickangle=-35,
-                yaxis_title="Tons of CO₂",
-                height=400,
-                yaxis_tickformat=","
-            )
-
-            st.plotly_chart(fig_emission, use_container_width=True)
 # ----------------------------------------------------
     # RAW DATA VIEW
     # ----------------------------------------------------

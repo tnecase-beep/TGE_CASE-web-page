@@ -10,7 +10,6 @@ import plotly.express as px
 import requests
 from io import BytesIO
 import re
-import os
 import sys
 from pathlib import Path
 import streamlit.components.v1 as components
@@ -242,20 +241,23 @@ def run_sc1():
     
     
     
-    # 👉 Replace with your GitHub-hosted file URL when public
     GITHUB_XLSX_URL = (
         "https://raw.githubusercontent.com/aydınarda/TGE_CASE-web-page/main/single_page/"
         "simulation_results_demand_levels.xlsx"
     )
-    
+    LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levels.xlsx")
 
     try:
-        excel_data = load_excel_from_github(GITHUB_XLSX_URL)
+        local_path = Path(LOCAL_XLSX_PATH)
+        if local_path.exists():
+            excel_data = pd.read_excel(local_path, sheet_name=None)
+        else:
+            excel_data = load_excel_from_github(GITHUB_XLSX_URL)
         sheet_names = [s for s in excel_data.keys() if s.startswith("Array_")]
         if not sheet_names:
             st.error("❌ No sheets starting with 'Array_' found.")
             st.stop()
-    
+
     except Exception as e:
         st.error(f"❌ Failed to load Excel file: {e}")
         st.stop()
@@ -263,7 +265,7 @@ def run_sc1():
     # ----------------------------------------------------
     # SIDEBAR CONTROLS (SC2-style layout)
     # ----------------------------------------------------
-    st.sidebar.header("📦 Demand Level (%)")
+    # st.sidebar.header("📦 Demand Level (%)")
 
     # Extract numeric levels automatically (e.g., Array_90% → 90)
     levels = sorted(
@@ -272,13 +274,12 @@ def run_sc1():
     )
     level_labels = [f"{lvl}%" for lvl in levels]
 
-    # Dropdown to pick demand level (matches SC2 look & feel)
-    selected_level_label = st.sidebar.selectbox(
-        "Demand Level (%)",
-        options=level_labels,
-        index=0,
-        help="Select the demand level whose scenario results you want to visualize."
-    )
+    # Demand-level UI intentionally hidden; always default to the 100% sheet.
+    selected_level_label = next((label for label in level_labels if str(label).strip() == "100%"), None)
+    if selected_level_label is None:
+        selected_level_label = next((label for label in level_labels if "100" in str(label)), None)
+    if selected_level_label is None:
+        selected_level_label = level_labels[0] if level_labels else "100%"
     selected_level = int(str(selected_level_label).replace("%", "").strip())
 
     selected_sheet = f"Array_{selected_level}%"
@@ -291,8 +292,12 @@ def run_sc1():
     
     # Load selected sheet
     df = excel_data[selected_sheet].round(2)
+    if isinstance(df, pd.Series):
+        df = df.to_frame().T
+    elif not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
     
-    df_display = df.applymap(lambda x: format_number(x, 0))  # For display purposes only (keep original df for logic)
+    df_display = df.apply(lambda col: col.map(lambda x: format_number(x, 0)))  # For display purposes only (keep original df for logic)
     
     
     # ----------------------------------------------------
@@ -358,21 +363,19 @@ def run_sc1():
     # ----------------------------------------------------
     # CO₂ REDUCTION SLIDER (0–100% visual, internal 0–1)
     # ----------------------------------------------------
-    default_val = float(subset[co2_col].mean()) if co2_col in subset.columns else 0.25
-    
-    # ✅ Always start from 0% CO₂ reduction
-    default_val = 0.0  # (fractional form, 0.0 = 0%)
-    
-    co2_pct_display = st.sidebar.slider(
-        "CO₂ Reduction Target (%)",
-        min_value=0,
-        max_value=100,
-        value=int(default_val * 100),  # ✅ default = 0%
-        step=1,
-        help="Set a CO₂ reduction target between 0–100 %.",
-    )
-    
-    # Convert displayed percentage back to 0–1 for internal matching
+    default_val = 0.0
+
+    with st.sidebar.form("filter_params_sc1"):
+        co2_pct_display = st.slider(
+            "Emission Reduction Target (%)",
+            min_value=0,
+            max_value=100,
+            value=int(default_val * 100),
+            step=1,
+            help="Set a Emission Reduction Target between 0–100 %.",
+        )
+        st.form_submit_button("Search")
+
     co2_pct = co2_pct_display / 100.0
     
     # ----------------------------------------------------
@@ -392,19 +395,12 @@ def run_sc1():
     # 🚨 DEMAND SATISFACTION CHECK (NO POP-UP)
     #   Note: UNS metrics live in Demand_* sheets (not Array_* sheets).
     # ----------------------------------------------------
-    required_cols = [
-        "Used_UNS_Fallback",
-        "Satisfied_Demand_units",
-        "Satisfied_Demand_pct",
-        "Unmet_Demand_units",
-    ]
-
     # Initialize to avoid UnboundLocalError in every branch
     used_uns = False
     satisfied_units = None
     satisfied_pct = None
     unmet_units = None
-    total_demand_units = None
+    total_demand_units = 111000.0 * (selected_level / 100.0)
 
     # Prefer Demand_* sheet for UNS metrics (Array_* does not contain them)
     demand_sheet = f"Demand_{selected_level}%"
@@ -425,28 +421,57 @@ def run_sc1():
     # Robust to leading/trailing spaces in Excel headers
     _canon = lambda s: str(s).strip()
     available_cols = set(_canon(c) for c in row_for_uns.index)
-    missing = [c for c in required_cols if _canon(c) not in available_cols]
+    has_uns_metrics = any(
+        col in available_cols
+        for col in (
+            "Used_UNS_Fallback",
+            "Satisfied_Demand_units",
+            "Satisfied_Demand_pct",
+            "Unmet_Demand_units",
+        )
+    )
 
-    if not missing:
+    if has_uns_metrics:
         used_uns = _safe_bool(row_for_uns.get("Used_UNS_Fallback", False), False)
-        satisfied_units = _safe_float(row_for_uns.get("Satisfied_Demand_units", 0.0), 0.0)
-        satisfied_pct = _safe_float(row_for_uns.get("Satisfied_Demand_pct", 1.0), 1.0)
-        unmet_units = _safe_float(row_for_uns.get("Unmet_Demand_units", 0.0), 0.0)
-        total_demand_units = satisfied_units + unmet_units
+        satisfied_units = _safe_float(row_for_uns.get("Satisfied_Demand_units", None), None)
+        satisfied_pct = _safe_float(row_for_uns.get("Satisfied_Demand_pct", None), None)
+        unmet_units = _safe_float(row_for_uns.get("Unmet_Demand_units", None), None)
+
+        if satisfied_units is None and satisfied_pct is not None:
+            satisfied_units = total_demand_units * max(0.0, min(1.0, satisfied_pct))
+        if satisfied_pct is None and satisfied_units is not None and total_demand_units > 0:
+            satisfied_pct = satisfied_units / total_demand_units
+        if unmet_units is None and satisfied_units is not None:
+            unmet_units = max(total_demand_units - satisfied_units, 0.0)
+        if satisfied_units is None and unmet_units is not None:
+            satisfied_units = max(total_demand_units - unmet_units, 0.0)
+
+        if satisfied_pct is None:
+            satisfied_pct = 1.0
+        if satisfied_units is None:
+            satisfied_units = total_demand_units
+        if unmet_units is None:
+            unmet_units = max(total_demand_units - satisfied_units, 0.0)
 
         # Only show a single, clean message (no pop-up)
         if used_uns or unmet_units > 1e-6 or satisfied_pct < 0.999999:
+            sat_pct_disp = max(0.0, min(1.0, satisfied_pct)) * 100.0
+            st.error(
+                f"⚠️ Capacity is insufficient; only {sat_pct_disp:.2f}% satisfied on average. You’re losing market share!"
+            )
+            """
             st.error(
                 f"⚠️ Demand NOT fully satisfied: {satisfied_units:,.0f}/{total_demand_units:,.0f} units "
-                f"({satisfied_pct*100:.2f}%). Unmet: {unmet_units:,.0f}."
+                f""
             )
+            """
     else:
         # Do not block visuals; just inform once
-        st.warning(
+        """st.warning(
             "⚠️ Demand satisfaction metrics are not available in this Excel output for the selected scenario. "
             "Please regenerate/upload results that include UNS metrics. "
-            f"Missing columns: {', '.join(missing)}."
-        )
+            "No demand satisfaction columns were found for the selected scenario."
+        )"""
 
 # ----------------------------------------------------
     # KPI SUMMARY
@@ -499,7 +524,7 @@ def run_sc1():
     # ----------------------------------------------------
     # 🆕 COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
     # ----------------------------------------------------
-    st.markdown("## 💶 Emissions vs Cost ")
+    st.markdown("## 💶 Emissions vs Total Cost ")
     
     @st.cache_data(show_spinner=False)
     def generate_cost_emission_chart_plotly_dynamic(df_sheet: pd.DataFrame, selected_value: float):
@@ -507,7 +532,8 @@ def run_sc1():
         emissions_col = "Total Emissions" if "Total Emissions" in df_sheet.columns else "CO2_Total"
         cost_col = "Total Cost" if "Total Cost" in df_sheet.columns else "Objective_value"
         co2_col = next((c for c in df_sheet.columns if "reduction" in c.lower() or "%" in c.lower()), None)
-    
+        
+
         df_chart = df_sheet[[emissions_col, cost_col, co2_col]].copy().sort_values(by=co2_col)
         df_chart["Emissions (k)"] = df_chart[emissions_col] / 1000
         df_chart["Cost (M)"] = df_chart[cost_col] / 1_000_000
@@ -576,7 +602,7 @@ def run_sc1():
     # ----------------------------------------------------
     # COST vs EMISSION PLOT
     # ----------------------------------------------------
-    st.markdown("## 📈 CO₂ Emission vs Cost ")
+    st.markdown("## 📈 Emissions vs Cost Elements ")
     
     cost_metric_map = {
         "Total Cost (€)": "Objective_value" if "Objective_value" in df.columns else "Total Cost",
@@ -618,17 +644,20 @@ def run_sc1():
         filtered["Selected_Cost"] = filtered[metric_cols]
     
     x_col = "Total Emissions" if "Total Emissions" in filtered.columns else "CO2_Total"
+    filtered["CO2 Reduction % Display"] = pd.to_numeric(filtered[co2_col], errors="coerce") * 100
     
     # --- Build Plotly chart ---
     fig = px.scatter(
         filtered,
         x=x_col,
         y="Selected_Cost",
-        color=co2_col,
+        color="CO2 Reduction % Display",
         template="plotly_white",
         color_continuous_scale="Viridis",
+        labels={"CO2 Reduction % Display": "CO2 Reduction %"},
         title=f"{selected_metric_label} vs CO₂ Emissions ({selected_sheet})",
     )
+    fig.update_coloraxes(colorbar=dict(ticksuffix="%"))
     
     # Safely find the point for the selected scenario
     if "Selected_Cost" in closest.index:
@@ -654,6 +683,136 @@ def run_sc1():
     # --- Display chart ---
     st.plotly_chart(fig, use_container_width=True)
     
+    # --- Read the corresponding detailed (Demand_*) sheet row for dependent charts ---
+    demand_sheet = f"Demand_{selected_level}%"
+    df_demand = excel_data.get(demand_sheet)
+    closest_idx = int(closest.name) if closest.name is not None else None
+    closest_demand = None
+    if df_demand is not None and closest_idx is not None:
+        if 0 <= closest_idx < len(df_demand):
+            closest_demand = df_demand.iloc[closest_idx]
+
+    # ----------------------------------------------------
+    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION
+    # ----------------------------------------------------
+    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
+    
+    colB, colC = st.columns(2)
+    
+    # --- 2️⃣ Cost Distribution ---
+    with colB:
+        st.subheader("Cost Distribution")
+    
+        cost_components = {
+            "Transportation Cost": closest.get("Transportation Cost", 0) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))),
+            "Sourcing/Handling Cost": closest.get("Sourcing/Handling Cost", 0),
+            "Carbon Cost in Production": closest.get("CO2 Cost in Production", 0),
+            "Inventory Cost": closest.get("Transit Inventory Cost", 0),
+        }
+    
+        df_cost_dist = pd.DataFrame({
+            "Category": list(cost_components.keys()),
+            "Value": list(cost_components.values())
+        })
+        df_cost_dist["Value_MEUR"] = pd.to_numeric(df_cost_dist["Value"], errors="coerce") / 1_000_000.0
+    
+        fig_cost_dist = px.bar(
+            df_cost_dist,
+            x="Category",
+            y="Value_MEUR",
+            text="Value_MEUR",
+            color="Category",
+            color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"],
+        )
+    
+        fig_cost_dist.update_traces(
+            texttemplate="%{text:.2f} M€",
+            textposition="outside"
+        )
+        fig_cost_dist.update_layout(
+            template="plotly_white",
+            showlegend=False,
+            xaxis_tickangle=-35,
+            yaxis_title="Million €",
+            height=400,
+            yaxis_tickformat=".2f"
+        )
+    
+        st.plotly_chart(fig_cost_dist, use_container_width=True)
+    
+    # --- 3️⃣ Emission Distribution ---
+    with colC:
+        st.subheader("Emission Distribution")
+
+        emission_aliases = {
+            "Production": ["E_Production", "E(Production)", "E_production"],
+            "Last-mile": ["E_Last-mile", "E(Last-mile)", "E_lastmile", "E_last-mile", "E_LastMile", "E(LastMile)"],
+            "Air": ["E_Air", "E(Air)", "E_air"],
+            "Water": ["E_Water", "E(Water)", "E_water", "E(water)", "E_Sea", "E(Sea)", "E_sea", "E(sea)"],
+            "Road": ["E_Road", "E(Road)", "E_road"],
+        }
+
+        def _pick_emission(row, keys):
+            for k in keys:
+                if row is not None and hasattr(row, 'index') and k in row.index:
+                    v = row.get(k, 0)
+                    try:
+                        return float(v)
+                    except Exception:
+                        try:
+                            return float(str(v).replace(',', '.'))
+                        except Exception:
+                            return 0.0
+            return 0.0
+
+        row_for_emissions = closest
+        has_any = any(any(k in row_for_emissions.index for k in ks) for ks in emission_aliases.values())
+        if (not has_any) and (closest_demand is not None):
+            row_for_emissions = closest_demand
+
+        emission_data = {
+            name: _pick_emission(row_for_emissions, keys)
+            for name, keys in emission_aliases.items()
+        }
+
+        emission_data["Total Transport"] = (
+            emission_data.get("Air", 0) + emission_data.get("Water", 0) + emission_data.get("Road", 0)
+        )
+
+        if sum(emission_data.values()) == 0:
+            st.info("No emission data recorded for this scenario.")
+        else:
+            df_emission_dist = pd.DataFrame({
+                "Source": list(emission_data.keys()),
+                "Emissions": list(emission_data.values())
+            })
+
+            fig_emission_dist = px.bar(
+                df_emission_dist,
+                x="Source",
+                y="Emissions",
+                text="Emissions",
+                color="Source",
+                color_discrete_sequence=[
+                    "#1C7C54", "#17A2B8", "#808080", "#FFD700", "#4682B4", "#000000"
+                ]
+            )
+
+            fig_emission_dist.update_traces(
+                texttemplate="%{text:,.2f}",
+                textposition="outside"
+            )
+            fig_emission_dist.update_layout(
+                template="plotly_white",
+                showlegend=False,
+                xaxis_tickangle=-35,
+                yaxis_title="Tons of CO₂",
+                height=400,
+                yaxis_tickformat=","
+            )
+
+            st.plotly_chart(fig_emission_dist, use_container_width=True)
+
 
     
     # ----------------------------------------------------
@@ -673,15 +832,6 @@ def run_sc1():
             except Exception:
                 return 0.0
 
-    # --- Read the corresponding detailed (Demand_*) sheet row for flow variables ---
-    demand_sheet = f"Demand_{selected_level}%"
-    df_demand = excel_data.get(demand_sheet)
-    closest_idx = int(closest.name) if closest.name is not None else None
-    closest_demand = None
-    if df_demand is not None and closest_idx is not None:
-        if 0 <= closest_idx < len(df_demand):
-            closest_demand = df_demand.iloc[closest_idx]
-    
     # --- Total demand reference (scale by demand level) ---
     BASE_MARKET_DEMAND = 111000  # units at 100%
     demand_factor = (
@@ -958,134 +1108,6 @@ def run_sc1():
     if (l3_water + l3_air + l3_road) == 0:
         st.info("No transport activity recorded for this layer.")
     st.markdown("---")
-# ----------------------------------------------------
-    # 💰🌿 COST & EMISSION DISTRIBUTION SECTION
-    # ----------------------------------------------------
-    st.markdown("## 💰 Cost and 🌿 Emission Distribution")
-    
-    colB, colC = st.columns(2)
-    
-    # --- 2️⃣ Cost Distribution ---
-    with colB:
-        st.subheader("Cost Distribution")
-    
-        cost_components = {
-            "Transportation Cost": closest.get("Transportation Cost", 0) + (6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))),
-            "Sourcing/Handling Cost": closest.get("Sourcing/Handling Cost", 0),
-            "CO₂ Cost in Production": closest.get("CO2 Cost in Production", 0),
-            "Inventory Cost": closest.get("Transit Inventory Cost", 0),
-        }
-    
-        df_cost_dist = pd.DataFrame({
-            "Category": list(cost_components.keys()),
-            "Value": list(cost_components.values())
-        })
-    
-        fig_cost_dist = px.bar(
-            df_cost_dist,
-            x="Category",
-            y="Value",
-            text="Value",
-            color="Category",
-            color_discrete_sequence=["#A7C7E7", "#B0B0B0", "#F8C471", "#5D6D7E"],
-        )
-    
-        # ✅ Format with thousand separators
-        fig_cost_dist.update_traces(
-            texttemplate="%{text:,.0f}",  # commas, no decimals
-            textposition="outside"
-        )
-        fig_cost_dist.update_layout(
-            template="plotly_white",
-            showlegend=False,
-            xaxis_tickangle=-35,
-            yaxis_title="€",
-            height=400,
-            yaxis_tickformat=","  # comma separators on y-axis
-        )
-    
-        st.plotly_chart(fig_cost_dist, use_container_width=True)
-    
-    
-    # --- 3️⃣ Emission Distribution ---
-    with colC:
-        st.subheader("Emission Distribution")
-
-        # NOTE: Some sheets use names like E(Air), others use E_air.
-        # We read from the currently selected scenario row ("closest") and fall back to Demand_* if needed.
-        emission_aliases = {
-            "Production": ["E_Production", "E(Production)", "E_production"],
-            "Last-mile": ["E_Last-mile", "E(Last-mile)", "E_lastmile", "E_last-mile", "E_LastMile", "E(LastMile)"],
-            "Air": ["E_Air", "E(Air)", "E_air"],
-            # NOTE: In some files this was called Sea/sea/water/Water. UI should always show 'Water'.
-            "Water": ["E_Water", "E(Water)", "E_water", "E(water)", "E_Sea", "E(Sea)", "E_sea", "E(sea)"],
-            "Road": ["E_Road", "E(Road)", "E_road"],
-        }
-
-        def _pick_emission(row, keys):
-            for k in keys:
-                if row is not None and hasattr(row, 'index') and k in row.index:
-                    v = row.get(k, 0)
-                    try:
-                        return float(v)
-                    except Exception:
-                        try:
-                            return float(str(v).replace(',', '.'))
-                        except Exception:
-                            return 0.0
-            return 0.0
-
-        # Prefer the Array_* row (closest). If it does not contain emission columns, fall back to Demand_* aligned row.
-        row_for_emissions = closest
-        has_any = any(any(k in row_for_emissions.index for k in ks) for ks in emission_aliases.values())
-        if (not has_any) and (closest_demand is not None):
-            row_for_emissions = closest_demand
-
-        emission_data = {
-            name: _pick_emission(row_for_emissions, keys)
-            for name, keys in emission_aliases.items()
-        }
-
-        # ✅ Add Total Transport (sum of Air + water + Road)
-        emission_data["Total Transport"] = (
-            emission_data.get("Air", 0) + emission_data.get("Water", 0) + emission_data.get("Road", 0)
-        )
-
-        if sum(emission_data.values()) == 0:
-            st.info("No emission data recorded for this scenario.")
-        else:
-            df_emission_dist = pd.DataFrame({
-                "Source": list(emission_data.keys()),
-                "Emissions": list(emission_data.values())
-            })
-
-            fig_emission_dist = px.bar(
-                df_emission_dist,
-                x="Source",
-                y="Emissions",
-                text="Emissions",
-                color="Source",
-                color_discrete_sequence=[
-                    "#1C7C54", "#17A2B8", "#808080", "#FFD700", "#4682B4", "#000000"
-                ]
-            )
-
-            # ✅ Add thousand separators
-            fig_emission_dist.update_traces(
-                texttemplate="%{text:,.2f}",
-                textposition="outside"
-            )
-            fig_emission_dist.update_layout(
-                template="plotly_white",
-                showlegend=False,
-                xaxis_tickangle=-35,
-                yaxis_title="Tons of CO₂",
-                height=400,
-                yaxis_tickformat=","
-            )
-
-            st.plotly_chart(fig_emission_dist, use_container_width=True)
-
     # ----------------------------------------------------
     # RAW DATA VIEW
     # ----------------------------------------------------
