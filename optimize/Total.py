@@ -1118,9 +1118,18 @@ def _render_puzzle_mode():
     )
 
     # Production sources = Layer 1 plants + selected new production facilities (Layer 2)
-    prod_sources = list(plants or cfg["plants_all"]) + list(new_locs)
+    prod_sources = list(plants) + list(new_locs)
     if len(prod_sources) == 0:
-        prod_sources = list(cfg["plants_all"])
+        st.warning("⚠️ You should choose at least one production center (plant or new facility) to continue.")
+        st.stop()
+
+    if plants and not crossdocks:
+        st.warning("⚠️ You should choose at least one cross-dock. Layer 1 plants require a cross-dock to route through.")
+        st.stop()
+
+    if not dcs:
+        st.warning("⚠️ You should choose at least one distribution center.")
+        st.stop()
 
     prod_share_pct_by_source = {}
     remaining_pct = 100
@@ -1168,7 +1177,7 @@ def _render_puzzle_mode():
 
     st.markdown("**Plant → Cross-dock**")
     l1_mode_share_by_plant = {}
-    for p in (plants or cfg["plants_all"]):
+    for p in plants:
         Water_pct = st.slider(f"{p} – Water share (L1) (%)", 0, 100, 50, 1, key=f"pz_l1_Water_{p}")
 
         # Auto remainder (non-editable): Air = 100% - Water
