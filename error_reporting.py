@@ -30,6 +30,8 @@ from pathlib import Path
 from typing import Any
 
 from crash_config import (
+    DEFAULT_ERROR_EMAIL_ENABLED,
+    DEFAULT_ERROR_REPORTING_ENABLED,
     DEFAULT_ERROR_REPORT_SECRET,
     DEFAULT_ERROR_REPORT_URL,
     DEFAULT_NOTIFY_EMAIL,
@@ -71,6 +73,22 @@ def _get_secret(env_key: str, secrets_key: str, default: str = "") -> str:
     return default
 
 
+def _get_bool_config(env_key: str, secrets_key: str, default: bool = True) -> bool:
+    """Read a boolean flag from env vars or Streamlit secrets."""
+    raw = os.environ.get(env_key, "").strip()
+    if not raw:
+        try:
+            import streamlit as st
+            value = st.secrets.get(secrets_key, None)
+            if value is not None:
+                raw = str(value).strip()
+        except Exception:
+            pass
+    if not raw:
+        return default
+    return raw.lower() not in {"0", "false", "no", "off", "disabled"}
+
+
 def _default_data_dir() -> Path:
     if os.environ.get("TGECASE_DATA_DIR"):
         return Path(os.environ["TGECASE_DATA_DIR"])
@@ -109,6 +127,11 @@ class _ExceptionForwardingHandler(logging.Handler):
 class ErrorReporter:
     def __init__(self, *, app_name: str, data_dir: Path | None = None) -> None:
         self.app_name = app_name
+        self.enabled = _get_bool_config(
+            "TGECASE_ERROR_REPORTING_ENABLED",
+            "error_reporting_enabled",
+            DEFAULT_ERROR_REPORTING_ENABLED,
+        )
         self.data_dir = data_dir or _default_data_dir()
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.log_path = self.data_dir / "tgecase.log"
@@ -141,6 +164,8 @@ class ErrorReporter:
 
     def install_hooks(self) -> None:
         """Install sys.excepthook and threading.excepthook."""
+        if not self.enabled:
+            return
         previous_excepthook = sys.excepthook
 
         def handle_exception(exc_type, exc_value, exc_tb):
@@ -169,6 +194,8 @@ class ErrorReporter:
 
     def install_logging_hook(self) -> None:
         """Forward ERROR-level log records that carry exception info."""
+        if not self.enabled:
+            return
         if self._handler is not None:
             return
         self._handler = _ExceptionForwardingHandler(self)
@@ -180,6 +207,8 @@ class ErrorReporter:
         Monkey-patch st.error and st.exception so every call is also reported.
         Idempotent – safe to call multiple times.
         """
+        if not self.enabled:
+            return
         if self._st_patched:
             return
         try:
@@ -226,6 +255,8 @@ class ErrorReporter:
 
     def report_st_error(self, message: str) -> None:
         """Report an explicit st.error() call."""
+        if not self.enabled:
+            return
         fingerprint = sha1(
             f"st.error\n{message}".encode("utf-8", errors="replace")
         ).hexdigest()[:16]
@@ -251,6 +282,8 @@ class ErrorReporter:
         exc_info=None,
         extra: dict[str, Any] | None = None,
     ) -> Path | None:
+        if not self.enabled:
+            return None
         if exc_info is None:
             exc_info = sys.exc_info()
 
@@ -345,6 +378,14 @@ class ErrorReporter:
         self._send_webhook(report, report_path)
 
     def _send_email(self, report: dict[str, Any]) -> None:
+        if not _get_bool_config(
+            "TGECASE_ERROR_EMAIL_ENABLED",
+            "error_email_enabled",
+            DEFAULT_ERROR_EMAIL_ENABLED,
+        ):
+            self.log("Email skipped: error email reporting disabled.")
+            return
+
         to_addr  = _get_secret("TGECASE_NOTIFY_EMAIL",  "notify_email",  DEFAULT_NOTIFY_EMAIL)
         from_addr = _get_secret("TGECASE_SMTP_FROM",    "smtp_from",     DEFAULT_SMTP_FROM)
         password = _get_secret("TGECASE_SMTP_PASSWORD", "smtp_password", "")

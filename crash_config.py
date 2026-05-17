@@ -11,6 +11,8 @@ For Streamlit Cloud, add to .streamlit/secrets.toml:
     # smtp_port    = "587"              # optional, this is the default
 
 Environment-variable equivalents (override secrets):
+    TGECASE_ERROR_REPORTING_ENABLED – master on/off switch (default: true)
+    TGECASE_ERROR_EMAIL_ENABLED     – email channel on/off switch (default: true)
     TGECASE_NOTIFY_EMAIL    – recipient address
     TGECASE_SMTP_FROM       – sender address
     TGECASE_SMTP_PASSWORD   – SMTP / Gmail app password
@@ -28,11 +30,13 @@ DEFAULT_ERROR_REPORT_URL = (
     "AKfycbzyYULrLOUl9AZEUXPBJ-5dIrOT-DGZKLB8vQOkeZYA_mzw9wrNZOLs8vaqf84m8_Ih/exec"
 )
 DEFAULT_ERROR_REPORT_SECRET = "TGECASE-2026-UZH-8d31f4c9b2e7"
+DEFAULT_ERROR_REPORTING_ENABLED = False
 
 # ------------------------------------------------------------------
 # E-mail (SMTP) – primary channel
 # Set these so the module can send you mail directly.
 # ------------------------------------------------------------------
+DEFAULT_ERROR_EMAIL_ENABLED = False
 DEFAULT_NOTIFY_EMAIL = ""   # e.g. "you@example.com"
 DEFAULT_SMTP_FROM    = ""   # e.g. "sender@gmail.com"
 DEFAULT_SMTP_HOST    = "smtp.gmail.com"
