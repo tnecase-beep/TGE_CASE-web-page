@@ -363,19 +363,21 @@ def run_sc1():
     # ----------------------------------------------------
     # CO₂ REDUCTION SLIDER (0–100% visual, internal 0–1)
     # ----------------------------------------------------
-    default_val = 0.0
-
-    with st.sidebar.form("filter_params_sc1"):
-        co2_pct_display = st.slider(
-            "Emission Reduction Target (%)",
-            min_value=0,
-            max_value=100,
-            value=int(default_val * 100),
-            step=1,
-            help="Set a Emission Reduction Target between 0–100 %.",
-        )
-        st.form_submit_button("Search")
-
+    default_val = float(subset[co2_col].mean()) if co2_col in subset.columns else 0.25
+    
+    # ✅ Always start from 0% CO₂ reduction
+    default_val = 0.0  # (fractional form, 0.0 = 0%)
+    
+    co2_pct_display = st.sidebar.slider(
+        "Emission Reduction Target (%)",
+        min_value=0,
+        max_value=100,
+        value=int(default_val * 100),  # ✅ default = 0%
+        step=1,
+        help="Set a Emission Reduction Target between 0–100 %.",
+    )
+    
+    # Convert displayed percentage back to 0–1 for internal matching
     co2_pct = co2_pct_display / 100.0
     
     # ----------------------------------------------------
