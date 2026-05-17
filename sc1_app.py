@@ -906,7 +906,7 @@ def run_sc1():
     
     with colB:
         st.markdown("#### 📦 Production Sourcing")
-        st.dataframe(df_prod.round(2), use_container_width=True)
+        st.dataframe(df_prod.round(2).style.hide(axis="index"), use_container_width=True)
     
     with colC:
         st.markdown("#### 🌿 CO₂ Factors (kg CO₂/unit)")
@@ -915,7 +915,7 @@ def run_sc1():
             "CO₂ kg/unit": [6.3, 9.8]
         })
         co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
-        st.dataframe(co2_factors_mfg, use_container_width=True)
+        st.dataframe(co2_factors_mfg.style.hide(axis="index"), use_container_width=True)
     
     
     # ----------------------------------------------------
@@ -978,7 +978,7 @@ def run_sc1():
         with colC:
             st.plotly_chart(fig_crossdock, use_container_width=True)
         with colD:
-            st.dataframe(df_crossdock.round(2), use_container_width=True)
+            st.dataframe(df_crossdock.round(2).style.hide(axis="index"), use_container_width=True)
     
     
     
