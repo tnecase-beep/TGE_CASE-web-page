@@ -302,6 +302,7 @@ def run_sc1():
     # FILTER PARAMETERS (SC2-style layout)
     # ----------------------------------------------------
     st.sidebar.header("🎛️ Filter Parameters")
+    SHOW_SERVICE_LEVEL_FILTER = False
     
     
     # Load selected sheet
@@ -341,7 +342,7 @@ def run_sc1():
         elif "Service Level" in subset.columns:
             service_col = "Service Level"
     
-        if service_col and not subset.empty:
+        if SHOW_SERVICE_LEVEL_FILTER and service_col and not subset.empty:
             subset[service_col] = subset[service_col].astype(float)
             selected_service_level = st.slider(
                 "Service Level",
