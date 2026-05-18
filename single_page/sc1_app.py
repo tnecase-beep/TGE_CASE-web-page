@@ -71,6 +71,16 @@ def load_excel_from_github(url: str):
     return excel_data  # dictionary of {sheet_name: DataFrame}
 
 
+@st.cache_data(show_spinner="Loading Parquet data...")
+def load_parquet_folder(folder: str):
+    """Load one Parquet file per sheet into the same shape as read_excel(sheet_name=None)."""
+    parquet_dir = Path(folder)
+    return {
+        p.stem.replace("pct", "%"): pd.read_parquet(p)
+        for p in sorted(parquet_dir.glob("*.parquet"))
+    }
+
+
 def format_number(value, x):
     """Format numbers with thousand separators and max two decimals."""
     try:
@@ -246,10 +256,14 @@ def run_sc1():
         "simulation_results_demand_levels.xlsx"
     )
     LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levels.xlsx")
+    LOCAL_PARQUET_DIR = resolve_local_path("parquet", "sc1")
 
     try:
         local_path = Path(LOCAL_XLSX_PATH)
-        if local_path.exists():
+        parquet_dir = Path(LOCAL_PARQUET_DIR)
+        if parquet_dir.exists():
+            excel_data = load_parquet_folder(str(parquet_dir))
+        elif local_path.exists():
             excel_data = pd.read_excel(local_path, sheet_name=None)
         else:
             excel_data = load_excel_from_github(GITHUB_XLSX_URL)
@@ -296,9 +310,6 @@ def run_sc1():
         df = df.to_frame().T
     elif not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    
-    df_display = df.apply(lambda col: col.map(lambda x: format_number(x, 0)))  # For display purposes only (keep original df for logic)
-    
     
     # ----------------------------------------------------
     # OPTIONAL FILTERS
