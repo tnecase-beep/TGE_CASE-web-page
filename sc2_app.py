@@ -175,6 +175,18 @@ def run_sc2():
     def load_data_from_excel(path: str, sheet: str):
         """Load a specific sheet from a local Excel file."""
         return pd.read_excel(path, sheet_name=sheet)
+
+    @st.cache_data(show_spinner="Loading Parquet sheets...")
+    def get_parquet_sheet_names(folder: str):
+        """Return sheet names represented by one Parquet file per sheet."""
+        parquet_dir = Path(folder)
+        return [p.stem.replace("pct", "%") for p in sorted(parquet_dir.glob("*.parquet"))]
+
+    @st.cache_data(show_spinner="Loading Parquet sheet...")
+    def load_data_from_parquet(folder: str, sheet: str):
+        """Load a specific sheet from a Parquet folder."""
+        parquet_path = Path(folder) / f"{sheet.replace('%', 'pct')}.parquet"
+        return pd.read_parquet(parquet_path)
     
     @st.cache_data(show_spinner="📡 Fetching backup data from GitHub...")
     def load_data_from_github(url: str):
@@ -199,8 +211,15 @@ def run_sc2():
     # st.sidebar.header("📦 Demand Level (%)")
     
     LOCAL_XLSX_PATH = resolve_local_path("simulation_results_demand_levelsSC2.xlsx")
+    LOCAL_PARQUET_DIR = resolve_local_path("parquet", "sc2")
 
-    available_sheets = get_sheet_names(LOCAL_XLSX_PATH)
+    parquet_dir = Path(LOCAL_PARQUET_DIR)
+    using_parquet = parquet_dir.exists()
+    available_sheets = (
+        get_parquet_sheet_names(str(parquet_dir))
+        if using_parquet
+        else get_sheet_names(LOCAL_XLSX_PATH)
+    )
     
     # Auto-detect demand-level sheets (contain % or “Demand”)
     demand_sheets = [s for s in available_sheets if "%" in s or "Demand" in s]
@@ -223,7 +242,9 @@ def run_sc2():
     )
     
     try:
-        if available_sheets:
+        if using_parquet and available_sheets:
+            df = load_data_from_parquet(str(parquet_dir), selected_demand).round(2)
+        elif available_sheets:
             df = load_data_from_excel(LOCAL_XLSX_PATH, sheet=selected_demand).round(2)
     
         else:
@@ -237,8 +258,6 @@ def run_sc2():
         df = df.to_frame().T
     elif not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-
-    df_display = df.apply(lambda col: col.map(lambda x: format_number(x, 0)))  # For display purposes only (keep original df for logic)
 
     def format_demand_level(value, fallback_label: str = ""):
         """Return a human-friendly demand level label (e.g., '95%')."""
