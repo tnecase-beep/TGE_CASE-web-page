@@ -31,6 +31,7 @@ DEFAULT_ERROR_REPORT_URL = (
 )
 DEFAULT_ERROR_REPORT_SECRET = "TGECASE-2026-UZH-8d31f4c9b2e7"
 DEFAULT_ERROR_REPORTING_ENABLED = False
+DEFAULT_ERROR_WEBHOOK_ENABLED = False
 
 # ------------------------------------------------------------------
 # E-mail (SMTP) – primary channel

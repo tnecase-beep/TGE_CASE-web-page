@@ -34,6 +34,7 @@ from crash_config import (
     DEFAULT_ERROR_REPORTING_ENABLED,
     DEFAULT_ERROR_REPORT_SECRET,
     DEFAULT_ERROR_REPORT_URL,
+    DEFAULT_ERROR_WEBHOOK_ENABLED,
     DEFAULT_NOTIFY_EMAIL,
     DEFAULT_SMTP_FROM,
     DEFAULT_SMTP_HOST,
@@ -49,6 +50,8 @@ except Exception:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+TGECASE_ERROR_REPORTING_ENABLED = False
 
 def _utc_now_iso() -> str:
     return (
@@ -123,6 +126,7 @@ class _ExceptionForwardingHandler(logging.Handler):
 # ---------------------------------------------------------------------------
 # Main class
 # ---------------------------------------------------------------------------
+TGECASE_ERROR_REPORTING_ENABLED = False
 
 class ErrorReporter:
     def __init__(self, *, app_name: str, data_dir: Path | None = None) -> None:
@@ -374,6 +378,8 @@ class ErrorReporter:
         return report_path
 
     def _send_all(self, report: dict[str, Any], report_path: Path) -> None:
+        if not self.enabled:
+            return
         self._send_email(report)
         self._send_webhook(report, report_path)
 
@@ -427,6 +433,13 @@ class ErrorReporter:
             self.log(f"Email failed: {exc}")
 
     def _send_webhook(self, report: dict[str, Any], report_path: Path) -> None:
+        if not _get_bool_config(
+            "TGECASE_ERROR_WEBHOOK_ENABLED",
+            "error_webhook_enabled",
+            DEFAULT_ERROR_WEBHOOK_ENABLED,
+        ):
+            self.log("Webhook skipped: error webhook reporting disabled.")
+            return
         url = (
             os.environ.get("TGECASE_ERROR_REPORT_URL", "").strip()
             or DEFAULT_ERROR_REPORT_URL
