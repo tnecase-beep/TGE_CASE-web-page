@@ -12,16 +12,25 @@ Created on Fri Nov 28 15:50:25 2025
 import os
 import re
 import streamlit as st
+import sys as _sys
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(APP_DIR)
 
 # Error reporting – initialise singleton early so st.error is patched
 # before any rendering begins. Safe to import even without credentials.
 try:
-    import sys as _sys
-    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if ROOT_DIR not in _sys.path:
+        _sys.path.append(ROOT_DIR)
     from error_reporting import get_reporter as _get_reporter
     _get_reporter()
 except Exception:
     pass
+
+if APP_DIR in _sys.path:
+    _sys.path.remove(APP_DIR)
+_sys.path.insert(0, APP_DIR)
+
 import pandas as pd
 import plotly.express as px
 import streamlit.components.v1 as components
@@ -1489,7 +1498,14 @@ def _render_puzzle_mode():
 
         st.plotly_chart(fig_prod, use_container_width=True)
         st.markdown("#### 📦 Production Summary Table")
-        st.dataframe(df_prod.round(2), use_container_width=True)
+        st.dataframe(
+            df_prod.round(2),
+            hide_index=True,
+            column_config={
+                "Units Produced": st.column_config.NumberColumn(format="%.2f"),
+            },
+            use_container_width=True,
+        )
 
         # ===========================================
         # 🚚 CROSS-DOCK OUTBOUND BREAKDOWN (Puzzle)
@@ -1523,7 +1539,15 @@ def _render_puzzle_mode():
 
             st.plotly_chart(fig_crossdock, use_container_width=True)
             st.markdown("#### 🚚 Cross-dock Outbound Table")
-            st.dataframe(df_crossdock.round(2), use_container_width=True)
+            st.dataframe(
+                df_crossdock.round(2),
+                hide_index=True,
+                column_config={
+                    "Shipped (units)": st.column_config.NumberColumn(format="%.2f"),
+                    "Share (%)": st.column_config.NumberColumn(format="%.2f"),
+                },
+                use_container_width=True,
+            )
 
         # Capacity sanity check
         viol = results.get("dc_capacity_violations", {})
