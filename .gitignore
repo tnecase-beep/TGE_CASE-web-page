@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyInstaller build outputs
+build/
+dist/
+*.spec.bak
+pyinstaller_output.txt
+
+# Runtime logs & temp files
+*.log
+tgecase_port.txt
+crash_reports/
+
+# Build artifacts / packages
+*.zip
+*.exe
+installer_output/
+$null
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.env

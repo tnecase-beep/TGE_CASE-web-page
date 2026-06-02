@@ -1,0 +1,235 @@
+name: build-executables
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+          test -f optimize/parquet/sc1/Array_100pct.parquet
+          test -f optimize/parquet/sc2/100pct.parquet
+
+      - name: Build Windows app
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+
+      - name: Verify Windows output
+        shell: powershell
+        run: |
+          if (-not (Test-Path dist\TNECase\TNECase.exe)) { throw "Windows exe not found." }
+          if (-not (Test-Path dist\TNECase\_internal\app\Total.py)) { throw "Windows app payload not found." }
+          if (-not (Test-Path dist\TNECase\_internal\app\parquet\sc1\Array_100pct.parquet)) { throw "Windows SC1 Parquet payload not found." }
+          if (-not (Test-Path dist\TNECase\_internal\app\parquet\sc2\100pct.parquet)) { throw "Windows SC2 Parquet payload not found." }
+          if (-not (Test-Path dist\TNECase-Windows.zip)) { throw "Windows zip not found." }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path dist\TNECase-Windows.zip))
+          try {
+            $hasTotal = $zip.Entries | Where-Object { $_.FullName -eq "_internal/app/Total.py" -or $_.FullName -eq "_internal\app\Total.py" } | Select-Object -First 1
+            if (-not $hasTotal) { throw "Windows zip payload missing _internal/app/Total.py." }
+            $hasSc1Parquet = $zip.Entries | Where-Object { $_.FullName -eq "_internal/app/parquet/sc1/Array_100pct.parquet" -or $_.FullName -eq "_internal\app\parquet\sc1\Array_100pct.parquet" } | Select-Object -First 1
+            if (-not $hasSc1Parquet) { throw "Windows zip payload missing SC1 Parquet." }
+            $hasSc2Parquet = $zip.Entries | Where-Object { $_.FullName -eq "_internal/app/parquet/sc2/100pct.parquet" -or $_.FullName -eq "_internal\app\parquet\sc2\100pct.parquet" } | Select-Object -First 1
+            if (-not $hasSc2Parquet) { throw "Windows zip payload missing SC2 Parquet." }
+          } finally {
+            $zip.Dispose()
+          }
+
+      - name: Upload Windows artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: TNECase-Windows
+          if-no-files-found: warn
+          path: |
+            dist/TNECase-Windows.zip
+            pyinstaller_output.txt
+
+  build-macos-intel:
+    runs-on: macos-15-intel
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+          test -f optimize/parquet/sc1/Array_100pct.parquet
+          test -f optimize/parquet/sc2/100pct.parquet
+
+      - name: Build macOS Intel app
+        shell: bash
+        run: |
+          rm -rf build dist
+          python -m PyInstaller \
+            --noconfirm --clean --onedir --windowed \
+            --name "TNECase" \
+            --target-arch x86_64 \
+            --osx-bundle-identifier "com.tnecase.app" \
+            --collect-all streamlit \
+            --collect-all plotly \
+            --collect-all altair \
+            --collect-all pydeck \
+            --collect-all pandas \
+            --collect-all pyarrow \
+            --collect-all numpy \
+            --collect-all scipy \
+            --collect-all geopy \
+            --collect-all gurobipy \
+            --collect-binaries gurobipy \
+            --collect-submodules gurobipy \
+            --hidden-import _socket \
+            --hidden-import socket \
+            --hidden-import select \
+            --hidden-import _multiprocessing \
+            --hidden-import multiprocessing \
+            --hidden-import _queue \
+            --hidden-import _overlapped \
+            --copy-metadata streamlit \
+            --add-data "optimize:app" \
+            launcher.py 2>&1 | tee pyinstaller-macos-intel.log
+
+          codesign --force --deep --sign - dist/TNECase.app
+          ditto -c -k --sequesterRsrc --keepParent dist/TNECase.app dist/TNECase-macOS-Intel.zip
+
+      - name: Verify macOS Intel output
+        shell: bash
+        run: |
+          test -d dist/TNECase.app
+          test -f dist/TNECase.app/Contents/MacOS/TNECase
+          test -f dist/TNECase.app/Contents/Info.plist
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TNECase.app/Contents/Resources/app/Total.py
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/parquet/sc1/Array_100pct.parquet || test -f dist/TNECase.app/Contents/Resources/app/parquet/sc1/Array_100pct.parquet
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/parquet/sc2/100pct.parquet || test -f dist/TNECase.app/Contents/Resources/app/parquet/sc2/100pct.parquet
+          file dist/TNECase.app/Contents/MacOS/TNECase
+          plutil -lint dist/TNECase.app/Contents/Info.plist
+          codesign --verify --deep --strict dist/TNECase.app
+
+      - name: Upload macOS Intel artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: TNECase-macOS-Intel
+          if-no-files-found: warn
+          path: |
+            dist/TNECase-macOS-Intel.zip
+            pyinstaller-macos-intel.log
+
+  build-macos-apple-silicon:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+          test -f optimize/parquet/sc1/Array_100pct.parquet
+          test -f optimize/parquet/sc2/100pct.parquet
+
+      - name: Build macOS Apple Silicon app
+        shell: bash
+        run: |
+          rm -rf build dist
+          python -m PyInstaller \
+            --noconfirm --clean --onedir --windowed \
+            --name "TNECase" \
+            --target-arch arm64 \
+            --osx-bundle-identifier "com.tnecase.app" \
+            --collect-all streamlit \
+            --collect-all plotly \
+            --collect-all altair \
+            --collect-all pydeck \
+            --collect-all pandas \
+            --collect-all pyarrow \
+            --collect-all numpy \
+            --collect-all scipy \
+            --collect-all geopy \
+            --collect-all gurobipy \
+            --collect-binaries gurobipy \
+            --collect-submodules gurobipy \
+            --hidden-import _socket \
+            --hidden-import socket \
+            --hidden-import select \
+            --hidden-import _multiprocessing \
+            --hidden-import multiprocessing \
+            --hidden-import _queue \
+            --hidden-import _overlapped \
+            --copy-metadata streamlit \
+            --add-data "optimize:app" \
+            launcher.py 2>&1 | tee pyinstaller-macos-arm64.log
+
+          codesign --force --deep --sign - dist/TNECase.app
+          ditto -c -k --sequesterRsrc --keepParent dist/TNECase.app dist/TNECase-macOS-AppleSilicon.zip
+
+      - name: Verify macOS Apple Silicon output
+        shell: bash
+        run: |
+          test -d dist/TNECase.app
+          test -f dist/TNECase.app/Contents/MacOS/TNECase
+          test -f dist/TNECase.app/Contents/Info.plist
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/Total.py || test -f dist/TNECase.app/Contents/Resources/app/Total.py
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/parquet/sc1/Array_100pct.parquet || test -f dist/TNECase.app/Contents/Resources/app/parquet/sc1/Array_100pct.parquet
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/parquet/sc2/100pct.parquet || test -f dist/TNECase.app/Contents/Resources/app/parquet/sc2/100pct.parquet
+          file dist/TNECase.app/Contents/MacOS/TNECase
+          plutil -lint dist/TNECase.app/Contents/Info.plist
+          codesign --verify --deep --strict dist/TNECase.app
+
+      - name: Upload macOS Apple Silicon artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: TNECase-macOS-AppleSilicon
+          if-no-files-found: warn
+          path: |
+            dist/TNECase-macOS-AppleSilicon.zip
+            pyinstaller-macos-arm64.log

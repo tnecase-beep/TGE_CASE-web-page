@@ -1,0 +1,11 @@
+streamlit
+pandas
+plotly
+numpy
+requests
+openpyxl
+matplotlib
+pyarrow
+gurobipy
+scipy
+geopy

@@ -1,0 +1,59 @@
+# =====================================
+# 🧩 Python cache and bytecode
+# =====================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# =====================================
+# 🧱 Virtual environments
+# =====================================
+.venv/
+venv/
+env/
+ENV/
+
+# =====================================
+# 🧾 Logs / temp files / misc
+# =====================================
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# =====================================
+# 🧠 IDE settings
+# =====================================
+.vscode/
+.idea/
+*.code-workspace
+
+# =====================================
+# 📊 Data or large local files (optional)
+# =====================================
+data/
+datasets/
+*.csv
+*.xlsx
+*.tsv
+*.parquet
+*.npz
+*.npy
+*.pkl
+*.pickle
+
+# =====================================
+# 🚫 Streamlit configuration
+# =====================================
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# =====================================
+# 📦 Build / packaging outputs
+# =====================================
+build/
+dist/
+*.egg-info/
+*.egg

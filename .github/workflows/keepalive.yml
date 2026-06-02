@@ -1,0 +1,58 @@
+name: Keep Streamlit Alive (Browser)
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"   # every 4 hours
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Wake Streamlit apps via real browser
+        run: |
+          python - <<EOF
+          from playwright.sync_api import sync_playwright
+
+          apps = [
+              "https://tneopt-app.streamlit.app/",
+              "https://tnecase-opt.streamlit.app/",
+              "https://tnecase-web-page-01.streamlit.app/",
+              "https://tne-case-web-sc1.streamlit.app/",
+              "https://tnemerge.streamlit.app/",
+              "https://tnecase-opt1.streamlit.app/"
+          ]
+
+          print("\n--- Starting Playwright Keepalive ---\n")
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page()
+
+              for url in apps:
+                  print(f"Visiting: {url}")
+                  try:
+                      page.goto(url, wait_until="networkidle", timeout=60000)
+                      print(f"✓ Loaded successfully: {url}\n")
+                  except Exception as e:
+                      print(f"✗ FAILED: {url}")
+                      print(f"  Reason: {e}\n")
+
+              browser.close()
+
+          print("--- Keepalive Finished ---")
+          EOF

@@ -1,0 +1,104 @@
+name: build-executables
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f optimize/requirements.txt ]; then pip install -r optimize/requirements.txt; else pip install -r requirements.txt; fi
+          pip install pyinstaller
+
+      - name: Prune obvious build junk from payload (keeps repo messy but bundle clean)
+        shell: bash
+        run: |
+          rm -rf optimize/__pycache__ optimize/build optimize/dist optimize/pyinstaller_output optimize/.venv || true
+          test -f optimize/parquet/sc1/Array_100pct.parquet
+          test -f optimize/parquet/sc2/100pct.parquet
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          if (Test-Path build) { Remove-Item -Recurse -Force build }
+          if (Test-Path dist)  { Remove-Item -Recurse -Force dist }
+          python -m PyInstaller `
+            --noconfirm --clean --onedir --noconsole `
+            --name "TNECase" `
+            --collect-all streamlit `
+            --collect-all plotly `
+            --collect-all altair `
+            --collect-all pydeck `
+            --collect-all pandas `
+            --collect-all pyarrow `
+            --collect-all numpy `
+            --collect-all scipy `
+            --collect-all geopy `
+            --collect-all gurobipy `
+            --collect-binaries gurobipy `
+            --collect-submodules gurobipy `
+            --copy-metadata streamlit `
+            --add-data "optimize;app" `
+            launcher.py
+          if (-not (Test-Path dist\TNECase\_internal\app\parquet\sc1\Array_100pct.parquet)) { throw "Windows SC1 Parquet payload not found." }
+          if (-not (Test-Path dist\TNECase\_internal\app\parquet\sc2\100pct.parquet)) { throw "Windows SC2 Parquet payload not found." }
+          Compress-Archive -Path dist\TNECase\* -DestinationPath dist\TNECase-Windows.zip
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          rm -rf build dist
+          python -m PyInstaller \
+            --noconfirm --clean --onedir --windowed \
+            --name "TNECase" \
+            --osx-bundle-identifier "com.tnecase.app" \
+            --collect-all streamlit \
+            --collect-all plotly \
+            --collect-all altair \
+            --collect-all pydeck \
+            --collect-all pandas \
+            --collect-all pyarrow \
+            --collect-all numpy \
+            --collect-all scipy \
+            --collect-all geopy \
+            --collect-all gurobipy \
+            --collect-binaries gurobipy \
+            --collect-submodules gurobipy \
+            --copy-metadata streamlit \
+            --add-data "optimize:app" \
+            launcher.py
+
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/parquet/sc1/Array_100pct.parquet || test -f dist/TNECase.app/Contents/Resources/app/parquet/sc1/Array_100pct.parquet
+          test -f dist/TNECase.app/Contents/Resources/_internal/app/parquet/sc2/100pct.parquet || test -f dist/TNECase.app/Contents/Resources/app/parquet/sc2/100pct.parquet
+
+          # Ad-hoc sign (not notarized, but reduces some “damaged app” issues)
+          codesign --force --deep --sign - dist/TNECase.app
+
+          # Zip the .app properly (DO NOT swallow errors)
+          ditto -c -k --sequesterRsrc --keepParent dist/TNECase.app dist/TNECase-macOS.zip
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TNECase-${{ runner.os }}
+          path: dist/*.zip
