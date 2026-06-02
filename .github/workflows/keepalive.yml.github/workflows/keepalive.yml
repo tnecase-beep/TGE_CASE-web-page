@@ -1,0 +1,22 @@
+name: Keep Streamlit Alive
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"   # every 4 hours (safe for GitHub Actions)
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake function
+        run: |
+          wake() {
+            echo "Waking $1"
+            curl -L --silent \
+              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0" \
+              "$1?refresh=$(date +%s)" \
+              > /dev/null || echo "Failed to wake $1"
+          }
+
+          wake "https://tnecase-opt1.streamlit.app/"
