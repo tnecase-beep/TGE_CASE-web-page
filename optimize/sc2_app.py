@@ -291,22 +291,21 @@ def run_sc2():
         )
     
         # 🎛️ Sourcing Cost Surcharge (Asia only) — optional if present in dataset
-        # Teaching note UI: We call the Sourcing Cost Multiplier "Sourcing Cost Surcharge"; a sliding bar
-        # from 100% to 300%, 50% increments. Internally this maps to a multiplier of 1.0–3.0.
+        # 0% surcharge = multiplier 1.0 (no extra cost), 200% surcharge = multiplier 3.0
         scm_col = next((c for c in df.columns if "sourcing" in c.lower() and "multiplier" in c.lower()), None)
         if scm_col is not None:
             scm_values = sorted(pd.to_numeric(df[scm_col], errors="coerce").dropna().unique().tolist())
             if scm_values:
                 selected_surcharge_pct = st.slider(
                     "Sourcing Cost Surcharge (%)",
-                    min_value=100,
-                    max_value=300,
-                    value=100,
+                    min_value=0,
+                    max_value=200,
+                    value=0,
                     step=50,
                     help="Applies only to Asia (Taiwan/Shanghai) sourcing costs."
                 )
-                requested_multiplier = selected_surcharge_pct / 100.0
-    
+                requested_multiplier = (selected_surcharge_pct / 100.0) + 1.0
+
                 # Use exact multiplier if available; otherwise snap to the closest available value in the dataset
                 closest_multiplier = min(scm_values, key=lambda x: abs(x - requested_multiplier))
                 df_scm = df[df[scm_col] == closest_multiplier].copy()
