@@ -872,7 +872,7 @@ def run_sc1():
         names="Source",
         values="Produced (units)",
         hole=0.3,
-        title=f"Production Share by Source (Demand Level: {selected_level}%)",
+        title=f"Production Share by Source",
     )
     
     # --- Color configuration ---
@@ -958,7 +958,7 @@ def run_sc1():
             names="Crossdock",
             values="Shipped (units)",
             hole=0.3,
-            title=f"Crossdock Outbound Share (Demand Level: {selected_level}%)",
+            title=f"Crossdock Outbound Share",
         )
     
         color_map_cd = {name: color for name, color in zip(df_crossdock["Crossdock"], px.colors.qualitative.Pastel)}

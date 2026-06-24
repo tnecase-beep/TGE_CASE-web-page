@@ -122,7 +122,7 @@ if ENABLE_GAMIFICATION:
 
 with st.sidebar.expander("📊 Optimization", expanded=True):
     opt_choice = st.radio(
-        "Select:",
+        "Select Mode:",
         optimization_nav_options,
         index=None,
         key="optimization_radio",
@@ -132,7 +132,7 @@ with st.sidebar.expander("📊 Optimization", expanded=True):
 # Collapsible "Dashboards" group
 with st.sidebar.expander("🏭 Dashboards", expanded=True):
     factory_choice = st.radio(
-        "Select model:",
+        "Select Scenario:",
         [
             "Scenario 1: Process Optimization",
             "Scenario 2: Supply Chain Transformation"
@@ -168,10 +168,10 @@ else:
         - **Dashboards (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
 
         **Optimization pages:**
-        - **🧩 Puzzle Mode:** Manually build a feasible network (activate sites, set mode shares, allocate production) and see **feasibility warnings + cost/CO₂ implications**.
+        - **🧩 Puzzle Mode:** Manually build a feasible network (facility selection, sourcing strategy, and transport mode mix) and see **base case comparison** + **cost/CO₂e implications**.
         - **Optimization Mode:** run scenarios and compare **cost vs CO₂e** (maps, flow breakdowns, and distributions).
-        - **Scenario 1: Process Optimization** Optimize within the **current network structure** by changing key “knobs” (e.g., **CO₂ target**).
-        - **Scenario 2: Supply Chain Transformation** Allow **structural change via local (EU) production** (open European facilities with fixed costs/capacity and different production emissions) and evaluate trade-offs. Allows to see the effect of carbon pricing or sourcing cost changes. 
+        - **Scenario 1: Process Optimization** within the current network structure by changing the emission reduction target.
+        - **Scenario 2: Supply Chain Transformation** allows **structural change via local EU production** and evaluates trade-offs. Allows seeing the effect of carbon pricing or sourcing cost changes. 
         """
     )
     st.stop()
@@ -1309,7 +1309,7 @@ def _render_puzzle_mode():
             st.metric(
                 "CO₂ (tons)",
                 f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
-                delta=f"{_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}% your CO₂",
+                delta=f"{_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}% your CO₂e",
                 delta_color="inverse",
             )
 
@@ -1324,7 +1324,7 @@ def _render_puzzle_mode():
             st.metric(
                 "CO₂ (tons)",
                 f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
-                delta=f"{_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}% your CO₂",
+                delta=f"{_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}% your CO₂e",
                 delta_color="inverse",
             )
 
@@ -1715,7 +1715,7 @@ if mode == "Gamification Mode":
 # ------------------------------------------------------------
 st.subheader("📊 Scenario Parameters")
 
-co2_pct = positive_input("CO₂ Reduction Target (%)", 50.0) / 100
+co2_pct = positive_input("Emission Reduction Target", 50.0) / 100
 
 # In Gamification Mode we always run the parametric MASTER model.
 # Model selection has no effect there, so we hide the selector.
@@ -1768,14 +1768,14 @@ if "service_level" not in st.session_state:
 
 
 # Only let user edit it in Normal Mode + SC1F (your requirement)
-if (mode == "Normal Mode") and (model_id == "SC1F"):
-    st.session_state["service_level"] = st.slider(
-        "Service Level",
-        min_value=0.50,
-        max_value=0.99,
-        value=float(st.session_state["service_level"]),
-        step=0.01
-    )
+#if (mode == "Normal Mode") and (model_id == "SC1F"):
+#    st.session_state["service_level"] = st.slider(
+#        "Service Level",
+#        min_value=0.50,
+#        max_value=0.99,
+#        value=float(st.session_state["service_level"]),
+#        step=0.01
+#    )
 
 # Always use the persisted value everywhere (including MASTER run)
 service_level = float(st.session_state["service_level"])

@@ -1092,15 +1092,7 @@ def run_sc2():
     
     st.plotly_chart(fig_map, use_container_width=True)
     
-    # --- Legend ---
-    st.markdown("""
-    **Legend:**
-    - 🏗️ **Cross-dock**  
-    - 🏬 **Distribution Center**  
-    - 🔴 **Retailer Hub**  
-    - ⚙️ **New Production Facility**  
-    - 🏭 **Plant** 
-    """)
+    
     
     
     # ----------------------------------------------------

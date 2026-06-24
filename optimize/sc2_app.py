@@ -856,7 +856,7 @@ def run_sc2():
         names="Source",
         values="Produced (units)",
         hole=0.3,
-        title=f"Production Share by Source (Demand Level: {format_demand_level(closest.get('Demand_Level', None), selected_demand)})",
+        title=f"Production Share by Source",
     )
     
     # --- Make 'Unmet Demand' grey ---
@@ -949,7 +949,7 @@ def run_sc2():
             names="Crossdock",
             values="Shipped (units)",
             hole=0.3,
-            title=f"Crossdock Outbound Share (Demand Level: {format_demand_level(closest.get('Demand_Level', None), selected_demand)})",
+            title=f"Crossdock Outbound Share",
         )
     
         # --- Assign color map ---
@@ -1109,15 +1109,7 @@ def run_sc2():
     
     st.plotly_chart(fig_map, use_container_width=True)
     
-    # --- Legend ---
-    st.markdown("""
-    **Legend:**
-    - 🏗️ **Cross-dock**  
-    - 🏬 **Distribution Center**  
-    - 🔴 **Retailer Hub**  
-    - ⚙️ **New Production Facility**  
-    - 🏭 **Plant** 
-    """)
+ 
     
     
     # ----------------------------------------------------
