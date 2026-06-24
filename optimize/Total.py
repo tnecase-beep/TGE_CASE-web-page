@@ -406,6 +406,12 @@ def _safe_float(x, default=0.0):
         return float(default)
 
 
+# Optimization models (SC1F/SC2F/...) encode the maritime mode as "sea" in their
+# variable names (e.g. f1[Taiwan,Vienna,sea]), while the UI/results use "Water".
+# Map raw model tokens -> canonical display keys so flows aren't silently dropped.
+_MODEL_MODE_ALIASES = {"air": "air", "sea": "Water", "water": "Water", "road": "road"}
+
+
 def sum_flows_by_mode_model(model, prefix: str):
     """Sum air/Water/road units for a given flow prefix like 'f1', 'f2', 'f2_2', or 'f3' from model."""
     totals = {"air": 0.0, "Water": 0.0, "road": 0.0}
@@ -419,7 +425,7 @@ def sum_flows_by_mode_model(model, prefix: str):
         parts = _parse_inside_brackets(n)
         if not parts or len(parts) < 3:
             continue
-        mode = str(parts[-1]).lower()
+        mode = _MODEL_MODE_ALIASES.get(str(parts[-1]).strip().lower())
         if mode in totals:
             totals[mode] += _safe_float(getattr(v, "X", 0.0))
 
