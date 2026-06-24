@@ -338,7 +338,7 @@ def run_sc2():
     pool = df.copy() if price_col is None else df[df[price_col] == co2_cost]
 
     if pool.empty:
-        st.warning("⚠️ No scenarios match this CO₂ price — showing all instead.")
+        st.warning("⚠️ No scenarios match this CO₂e price — showing all instead.")
         pool = df.copy()
 
     # NOTE: We do NOT require an exact CO₂ match here.
@@ -351,7 +351,7 @@ def run_sc2():
     pool = df[df["CO2_CostAtMfg"] == co2_cost] if "CO2_CostAtMfg" in df.columns else df.copy()
     
     if pool.empty:
-        st.warning("⚠️ No scenarios match this CO₂ price — showing all instead.")
+        st.warning("⚠️ No scenarios match this CO₂e price — showing all instead.")
         pool = df.copy()
     
     # Find closest feasible scenario to chosen CO₂ reduction
@@ -359,7 +359,7 @@ def run_sc2():
         closest_idx = (pool["CO2_percentage"] - co2_pct).abs().argmin()
         closest = pool.iloc[closest_idx]
     except Exception:
-        st.error("💥 The optimizer fainted — no matching CO₂ targets exist in this dataset! 🌀")
+        st.error("💥 The optimizer fainted — no matching CO₂e targets exist in this dataset! 🌀")
         st.stop()
     
     # ----------------------------------------------------
@@ -367,7 +367,7 @@ def run_sc2():
     # ----------------------------------------------------
     if pd.isna(closest.get("Objective_value", None)):
         st.error(
-            "This solution is not feasible- even Swiss precision couldn't optimize it! Please adjust the CO2 target and parameters."
+            "This solution is not feasible- even Swiss precision couldn't optimize it! Please adjust the CO2e target and parameters."
         )
         fig_sens.update_coloraxes(colorbar=dict(ticksuffix="%"))
         st.stop()
@@ -444,7 +444,7 @@ def run_sc2():
     col1, col2, col3, col4 = st.columns(4)
     
     col1.metric("Total Cost (€)", f"{closest['Objective_value']:,.0f}")
-    col2.metric("Total CO₂", f"{closest['CO2_Total']:,.2f}")
+    col2.metric("Total CO₂e", f"{closest['CO2_Total']:,.2f}")
     col3.metric("Inventory Total (€)", f"{closest[['Inventory_L1','Inventory_L2','Inventory_L3']].sum():,.0f}")
     col4.metric("Transport Total (€)", f"{(closest[['Transport_L1','Transport_L2','Transport_L3']].sum() + closest.get('Transport_L2_new', 0) + (6.25 * float(closest.get('Satisfied_Demand_units', 0)))):,.0f}")
 
@@ -456,7 +456,7 @@ def run_sc2():
 
     @st.cache_data(show_spinner=False)
     def generate_cost_emission_chart_plotly_dynamic(df_sheet: pd.DataFrame, selected_value: float):
-        """Dual-axis (bars=emissions, line=cost) over CO₂ target levels, with the current selection highlighted."""
+        """Dual-axis (bars=emissions, line=cost) over CO₂e target levels, with the current selection highlighted."""
 
         # Detect column names robustly
         emissions_col = "CO2_Total" if "CO2_Total" in df_sheet.columns else (
@@ -549,7 +549,7 @@ def run_sc2():
             template="plotly_white",
             title=dict(text="<b>Cost vs. Emissions</b>", x=0.45, font=dict(color="firebrick", size=20)),
             xaxis=dict(
-                title="CO₂ Reduction (%)",
+                title="CO₂e Reduction (%)",
                 tickformat=".0%",
                 showgrid=False,
             ),
@@ -620,11 +620,11 @@ def run_sc2():
             y="Selected_Cost",
             color="CO2 Reduction % Display",
             hover_data=hover_cols,
-            title=f"{selected_metric_label} vs Total CO₂ ({price_col or 'CO₂ price'} = {co2_cost} €/ton)",
+            title=f"{selected_metric_label} vs Total CO₂e ({price_col or 'CO₂e price'} = {co2_cost} €/ton)",
             labels={
-                "CO2_Total": "Total CO₂ Emissions (tons)",
+                "CO2_Total": "Total CO₂e Emissions (tons)",
                 "Selected_Cost": y_label,
-                "CO2 Reduction % Display": "CO2 Reduction %"
+                "CO2 Reduction % Display": "CO₂e Reduction %"
             },
             color_continuous_scale="Viridis",
             template="plotly_white"
@@ -796,7 +796,7 @@ def run_sc2():
                 template="plotly_white",
                 showlegend=False,
                 xaxis_tickangle=-35,
-                yaxis_title="Tons of CO₂",
+                yaxis_title="Tons of CO₂e",
                 height=400,
                 yaxis_tickformat=","
             )
@@ -885,12 +885,12 @@ def run_sc2():
         st.dataframe(df_prod.round(2).style.hide(axis="index"), use_container_width=True)
     
     with colC:
-        st.markdown("#### 🌿 CO₂ Factors (kg/unit)")
+        st.markdown("#### 🌿 CO₂e Factors (kg/unit)")
         co2_factors_mfg = pd.DataFrame({
             "From mfg": ["Taiwan", "Shanghai", "Budapest", "Prague", "Cork", "Helsinki", "Warsaw"],
-            "CO₂ kg/unit": [6.3, 9.8, 3.2, 2.8, 4.6, 5.8, 6.2 ],
+            "CO₂e kg/unit": [6.3, 9.8, 3.2, 2.8, 4.6, 5.8, 6.2 ],
         })
-        co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
+        co2_factors_mfg["CO₂e kg/unit"] = co2_factors_mfg["CO₂e kg/unit"].map(lambda v: f"{v:.1f}")
         st.dataframe(co2_factors_mfg.style.hide(axis="index"), use_container_width=True)
     
     

@@ -347,8 +347,8 @@ def run_sc1():
             co2_col = possible_co2_cols[0]
         else:
             st.error(
-                "❌ Could not find any CO₂-related percentage column. "
-                "Make sure one of the columns includes terms like 'CO2', 'Reduction', or '%'."
+                "❌ Could not find any CO₂e-related percentage column. "
+                "Make sure one of the columns includes terms like 'CO₂e', 'Reduction', or '%'."
             )
             st.stop()
         
@@ -385,7 +385,7 @@ def run_sc1():
     if (subset[co2_col] - co2_pct).abs().min() >= 1e-6:
         closest_val = _safe_float_local(closest.get(co2_col, co2_pct), co2_pct)
         st.sidebar.warning(
-            f"⚠️ No exact match for CO₂ target {co2_pct_display}%. Showing closest scenario at {closest_val*100:.0f}%."
+            f"⚠️ No exact match for CO₂e target {co2_pct_display}%. Showing closest scenario at {closest_val*100:.0f}%."
         )
 
         # ----------------------------------------------------
@@ -492,7 +492,7 @@ def run_sc1():
         f"{(closest['Total Cost'] if 'Total Cost' in closest else closest.get('Objective_value', 0)):,.0f}"
     )
     col2.metric(
-        "Total CO₂ (tons)",
+        "Total CO₂e (tons)",
         f"{(closest['Total Emissions'] if 'Total Emissions' in closest else closest.get('CO2_Total', 0)):,.2f}"
     )
     
@@ -578,7 +578,7 @@ def run_sc1():
             template="plotly_white",
             title=dict(text="<b>Cost vs. Emissions</b>", x=0.45, font=dict(color="firebrick", size=20)),
             xaxis=dict(
-                title="CO₂ Reduction (%)",
+                title="CO₂e Reduction (%)",
                 tickformat=".0%",
                 showgrid=False
             ),
@@ -651,8 +651,8 @@ def run_sc1():
         color="CO2 Reduction % Display",
         template="plotly_white",
         color_continuous_scale="Viridis",
-        labels={"CO2 Reduction % Display": "CO2 Reduction %"},
-        title=f"{selected_metric_label} vs CO₂ Emissions ({selected_sheet})",
+        labels={"CO2e Reduction % Display": "CO₂e Reduction %"},
+        title=f"{selected_metric_label} vs CO₂e Emissions ({selected_sheet})",
     )
     fig.update_coloraxes(colorbar=dict(ticksuffix="%"))
     
@@ -803,7 +803,7 @@ def run_sc1():
                 template="plotly_white",
                 showlegend=False,
                 xaxis_tickangle=-35,
-                yaxis_title="Tons of CO₂",
+                yaxis_title="Tons of CO₂e",
                 height=400,
                 yaxis_tickformat=","
             )
@@ -902,12 +902,12 @@ def run_sc1():
         st.dataframe(df_prod.round(2).style.hide(axis="index"), use_container_width=True)
     
     with colC:
-        st.markdown("#### 🌿 CO₂ Factors (kg CO₂/unit)")
+        st.markdown("#### 🌿 CO₂e Factors (kg CO₂e/unit)")
         co2_factors_mfg = pd.DataFrame({
             "From mfg": ["Taiwan", "Shanghai"],
-            "CO₂ kg/unit": [6.3, 9.8]
+            "CO₂e kg/unit": [6.3, 9.8]
         })
-        co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
+        co2_factors_mfg["CO₂e kg/unit"] = co2_factors_mfg["CO₂e kg/unit"].map(lambda v: f"{v:.1f}")
         st.dataframe(co2_factors_mfg.style.hide(axis="index"), use_container_width=True)
     
     

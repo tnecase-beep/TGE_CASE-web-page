@@ -1307,14 +1307,14 @@ def _render_puzzle_mode():
                 delta_color="inverse",
             )
             st.metric(
-                "CO₂ (tons)",
+                "CO₂e (tons)",
                 f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"{_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}% your CO₂e",
                 delta_color="inverse",
             )
 
         with bc2:
-            st.markdown("**Min CO₂ base case**")
+            st.markdown("**Min CO₂e base case**")
             st.metric(
                 "Cost (€)",
                 f"{MIN_CO2_BASE_CASE_EUR:,.0f}",
@@ -1322,7 +1322,7 @@ def _render_puzzle_mode():
                 delta_color="inverse",
             )
             st.metric(
-                "CO₂ (tons)",
+                "CO₂e (tons)",
                 f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
                 delta=f"{_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}% your CO₂e",
                 delta_color="inverse",
@@ -1740,7 +1740,7 @@ BASE_SOURCING_COST = {"Taiwan": 3.343692308, "Shanghai": 3.423384615}
 # (Gamification Mode keeps MASTER defaults and does not expose these controls.)
 if (mode == "Normal Mode") and (model_id == "SC2F"):
     sourcing_cost_multiplier_pct = st.slider(
-        "Sourcing Cost Multiplier for Asian facilites (%)",
+        "Sourcing Cost Surcharge for Asian facilites (%)",
         min_value=50,
         max_value=400,
         value=100,
@@ -1751,11 +1751,11 @@ if (mode == "Normal Mode") and (model_id == "SC2F"):
 
     # European carbon price parameter for SC2F (new facilities)
     co2_cost_per_ton_New = st.number_input(
-        "European Carbon Price (€/ton CO₂)",
+        "European Carbon Price (€/ton CO₂e)",
         min_value=0.0,
         value=60.0,
         step=1.0,
-        help="Applies to manufacturing CO₂ cost for NEW (EU) facilities in Scenario 2.",
+        help="Applies to manufacturing CO₂e cost for NEW (EU) facilities in Scenario 2.",
     )
 else:
     sourcing_cost_multiplier = 1.0
@@ -1940,7 +1940,7 @@ if st.button("Run Optimization"):
 
 
 
-            st.subheader("🌿 CO₂ Emissions")
+            st.subheader("🌿 CO₂e Emissions")
             st.json({
                 "Air": results.get("E_air", 0),
                 "Water": results.get("E_Water", 0),
@@ -2244,7 +2244,7 @@ if st.button("Run Optimization"):
                 st.warning(
                     "Fallback models are only defined for Scenario 1/Scenario 2. "
                     "In Gamification Mode, please adjust your facility / mode "
-                    "selection or relax the CO₂ target and try again."
+                    "selection or relax the CO₂e target and try again."
                 )
 
             else:
