@@ -1722,7 +1722,7 @@ if mode == "Gamification Mode":
 # ------------------------------------------------------------
 st.subheader("📊 Scenario Parameters")
 
-co2_pct = positive_input("Emission Reduction Target", 50.0) / 100
+co2_pct = positive_input("Emission Reduction Target %", 50.0) / 100
 
 # In Gamification Mode we always run the parametric MASTER model.
 # Model selection has no effect there, so we hide the selector.

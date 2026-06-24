@@ -652,7 +652,7 @@ def run_sc1():
         template="plotly_white",
         color_continuous_scale="Viridis",
         labels={"CO2 Reduction % Display": "CO₂e Reduction %"},
-        title=f"{selected_metric_label} vs CO₂e Emissions ({selected_sheet})",
+        title=f"{selected_metric_label} vs CO₂e Emissions ",
     )
     fig.update_coloraxes(colorbar=dict(ticksuffix="%"))
     
