@@ -539,7 +539,8 @@ def render_cost_emission_distribution(results: dict):
         st.subheader("Emission Distribution")
 
         e_air = _safe_float(results.get("E_air", results.get("E_Air", 0)))
-        e_Water = _safe_float(results.get("E_Water", results.get("E_Water", 0)))
+        # Optimization models report the maritime emission under "E_sea"; puzzle uses "E_Water".
+        e_Water = _safe_float(results.get("E_Water", results.get("E_sea", 0)))
         e_road = _safe_float(results.get("E_road", results.get("E_Road", 0)))
         e_last = _safe_float(results.get("E_lastmile", results.get("E_Last-mile", results.get("E_last_mile", 0))))
         e_total = _safe_float(results.get("CO2_Total", results.get("Total Emissions", 0)))
@@ -1949,7 +1950,7 @@ if st.button("Run Optimization"):
             st.subheader("🌿 CO₂e Emissions")
             st.json({
                 "Air": results.get("E_air", 0),
-                "Water": results.get("E_Water", 0),
+                "Water": results.get("E_Water", results.get("E_sea", 0)),
                 "Road": results.get("E_road", 0),
                 "Last-mile": results.get("E_lastmile", 0),
                 "Production": results.get("E_production", 0),
