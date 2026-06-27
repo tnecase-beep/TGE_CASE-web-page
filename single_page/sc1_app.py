@@ -663,6 +663,8 @@ def run_sc1():
         if isinstance(metric_cols, list):
             cols_to_sum = [c for c in metric_cols if c in closest.index]
             closest_y = closest[cols_to_sum].sum()
+            if selected_metric_label.startswith("Transport Cost"):
+                closest_y += 6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))
         else:
             closest_y = closest.get(metric_cols, 0)
     

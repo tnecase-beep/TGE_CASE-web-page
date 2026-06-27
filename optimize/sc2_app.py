@@ -634,6 +634,8 @@ def run_sc2():
         # Highlight current scenario
         if isinstance(cost_metric_map[selected_metric_label], list):
             closest_y = closest[cost_metric_map[selected_metric_label]].sum()
+            if selected_metric_label == "Transport Cost (€)":
+                closest_y += 6.25 * float(closest.get("Satisfied_Demand_units", 0))
         else:
             closest_y = closest[cost_metric_map[selected_metric_label]]
     
