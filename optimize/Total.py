@@ -1336,14 +1336,14 @@ def _render_puzzle_mode():
             )
 
         st.subheader("🌿 CO₂e Emissions")
-        st.json({
+        st.json({k: f"{_safe_float(v):.2f}" for k, v in {
             "Air": results.get("E_air", 0),
             "Water": results.get("E_Water", 0),
             "Road": results.get("E_road", 0),
             "Last-mile": results.get("E_lastmile", 0),
             "Production": results.get("E_production", 0),
             "Total": results.get("CO2_Total", 0),
-        })
+        }.items()})
 
         render_cost_emission_distribution(results)
 
@@ -1948,14 +1948,14 @@ if st.button("Run Optimization"):
 
 
             st.subheader("🌿 CO₂e Emissions")
-            st.json({
+            st.json({k: f"{_safe_float(v):.2f}" for k, v in {
                 "Air": results.get("E_air", 0),
                 "Water": results.get("E_Water", results.get("E_sea", 0)),
                 "Road": results.get("E_road", 0),
                 "Last-mile": results.get("E_lastmile", 0),
                 "Production": results.get("E_production", 0),
                 "Total": results.get("CO2_Total", 0),
-            })
+            }.items()})
 
             render_cost_emission_distribution(results)
 
