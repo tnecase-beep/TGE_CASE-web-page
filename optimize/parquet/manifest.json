@@ -1,129 +1,87 @@
 {
   "format": "one parquet file per Excel sheet",
+  "regenerated_at": "2026-06-27T06:03:24",
+  "note": "optimize/parquet is generated FROM the optimize/ Excel files (source of truth). Do NOT regenerate from single_page/.",
   "created_from": {
     "sc1": {
-      "source_file": "single_page/simulation_results_demand_levels.xlsx",
-      "source_size_bytes": 1619770,
-      "read_excel_seconds": 4.557,
+      "source_file": "optimize/simulation_results_demand_levels.xlsx",
       "sheets": {
-        "Demand_100%": {
-          "path": "single_page/parquet/sc1/Demand_100pct.parquet",
-          "rows": 500,
-          "columns": 169,
-          "size_bytes": 150585,
-          "write_seconds": 0.047
+        "Array_100pct.parquet": {
+          "rows": 100,
+          "columns": 23
         },
-        "Array_100%": {
-          "path": "single_page/parquet/sc1/Array_100pct.parquet",
-          "rows": 500,
-          "columns": 24,
-          "size_bytes": 37092,
-          "write_seconds": 0.006
+        "Array_75pct.parquet": {
+          "rows": 100,
+          "columns": 23
         },
-        "Demand_95%": {
-          "path": "single_page/parquet/sc1/Demand_95pct.parquet",
-          "rows": 500,
-          "columns": 169,
-          "size_bytes": 149333,
-          "write_seconds": 0.026
+        "Array_80pct.parquet": {
+          "rows": 100,
+          "columns": 23
         },
-        "Array_95%": {
-          "path": "single_page/parquet/sc1/Array_95pct.parquet",
-          "rows": 500,
-          "columns": 24,
-          "size_bytes": 36252,
-          "write_seconds": 0.005
+        "Array_85pct.parquet": {
+          "rows": 100,
+          "columns": 23
         },
-        "Demand_90%": {
-          "path": "single_page/parquet/sc1/Demand_90pct.parquet",
-          "rows": 500,
-          "columns": 169,
-          "size_bytes": 147430,
-          "write_seconds": 0.025
+        "Array_90pct.parquet": {
+          "rows": 100,
+          "columns": 23
         },
-        "Array_90%": {
-          "path": "single_page/parquet/sc1/Array_90pct.parquet",
-          "rows": 500,
-          "columns": 24,
-          "size_bytes": 35021,
-          "write_seconds": 0.005
+        "Array_95pct.parquet": {
+          "rows": 100,
+          "columns": 23
         },
-        "Demand_85%": {
-          "path": "single_page/parquet/sc1/Demand_85pct.parquet",
-          "rows": 500,
-          "columns": 169,
-          "size_bytes": 145526,
-          "write_seconds": 0.024
+        "Demand_100pct.parquet": {
+          "rows": 100,
+          "columns": 167
         },
-        "Array_85%": {
-          "path": "single_page/parquet/sc1/Array_85pct.parquet",
-          "rows": 500,
-          "columns": 24,
-          "size_bytes": 33971,
-          "write_seconds": 0.005
+        "Demand_75pct.parquet": {
+          "rows": 100,
+          "columns": 167
         },
-        "Demand_80%": {
-          "path": "single_page/parquet/sc1/Demand_80pct.parquet",
-          "rows": 500,
-          "columns": 169,
-          "size_bytes": 143729,
-          "write_seconds": 0.023
+        "Demand_80pct.parquet": {
+          "rows": 100,
+          "columns": 167
         },
-        "Array_80%": {
-          "path": "single_page/parquet/sc1/Array_80pct.parquet",
-          "rows": 500,
-          "columns": 24,
-          "size_bytes": 32849,
-          "write_seconds": 0.005
+        "Demand_85pct.parquet": {
+          "rows": 100,
+          "columns": 167
+        },
+        "Demand_90pct.parquet": {
+          "rows": 100,
+          "columns": 167
+        },
+        "Demand_95pct.parquet": {
+          "rows": 100,
+          "columns": 167
         }
       }
     },
     "sc2": {
-      "source_file": "single_page/simulation_results_demand_levelsSC2.xlsx",
-      "source_size_bytes": 20105501,
-      "read_excel_seconds": 61.783,
+      "source_file": "optimize/simulation_results_demand_levelsSC2.xlsx",
       "sheets": {
-        "100%": {
-          "path": "single_page/parquet/sc2/100pct.parquet",
+        "100pct.parquet": {
           "rows": 4800,
-          "columns": 241,
-          "size_bytes": 266963,
-          "write_seconds": 0.064
+          "columns": 241
         },
-        "95%": {
-          "path": "single_page/parquet/sc2/95pct.parquet",
+        "75pct.parquet": {
           "rows": 4800,
-          "columns": 241,
-          "size_bytes": 262047,
-          "write_seconds": 0.05
+          "columns": 241
         },
-        "90%": {
-          "path": "single_page/parquet/sc2/90pct.parquet",
+        "80pct.parquet": {
           "rows": 4800,
-          "columns": 241,
-          "size_bytes": 259419,
-          "write_seconds": 0.05
+          "columns": 241
         },
-        "85%": {
-          "path": "single_page/parquet/sc2/85pct.parquet",
+        "85pct.parquet": {
           "rows": 4800,
-          "columns": 241,
-          "size_bytes": 253474,
-          "write_seconds": 0.05
+          "columns": 241
         },
-        "80%": {
-          "path": "single_page/parquet/sc2/80pct.parquet",
+        "90pct.parquet": {
           "rows": 4800,
-          "columns": 241,
-          "size_bytes": 249149,
-          "write_seconds": 0.05
+          "columns": 241
         },
-        "75%": {
-          "path": "single_page/parquet/sc2/75pct.parquet",
+        "95pct.parquet": {
           "rows": 4800,
-          "columns": 241,
-          "size_bytes": 245391,
-          "write_seconds": 0.051
+          "columns": 241
         }
       }
     }
