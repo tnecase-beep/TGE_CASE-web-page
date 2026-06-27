@@ -469,6 +469,9 @@ def render_cost_emission_distribution(results: dict):
             + _safe_float(results.get("Transport_L2", 0))
             + _safe_float(results.get("Transport_L2_new", results.get("Transport_L2_new", 0)))
             + _safe_float(results.get("Transport_L3", 0))
+            # Last-mile (6.25 €/unit): SC1F/SC2F report it as "Fixed_Last_Mile",
+            # puzzle mode as "LastMile_Cost". sc1/sc2 apps include it in transport too.
+            + _safe_float(results.get("Fixed_Last_Mile", results.get("LastMile_Cost", 0)))
         )
         if transport_cost <= 0 and "Transportation Cost" in results:
             transport_cost = _safe_float(results.get("Transportation Cost", 0))
