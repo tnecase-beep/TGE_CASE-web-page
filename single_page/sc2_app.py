@@ -888,9 +888,9 @@ def run_sc2():
         st.markdown("#### 🌿 CO₂e Factors (kg/unit)")
         co2_factors_mfg = pd.DataFrame({
             "From mfg": ["Taiwan", "Shanghai", "Budapest", "Prague", "Cork", "Helsinki", "Warsaw"],
-            "CO₂e kg/unit": [6.3, 9.8, 3.2, 2.8, 4.6, 5.8, 6.2 ],
+            "CO₂ kg/unit": [6.3, 9.8, 3.2, 2.8, 4.6, 5.8, 6.2 ],
         })
-        co2_factors_mfg["CO₂e kg/unit"] = co2_factors_mfg["CO₂e kg/unit"].map(lambda v: f"{v:.1f}")
+        co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
         st.dataframe(co2_factors_mfg.style.hide(axis="index"), use_container_width=True)
     
     

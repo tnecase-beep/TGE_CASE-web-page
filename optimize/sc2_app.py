@@ -899,7 +899,7 @@ def run_sc2():
             "From mfg": ["Taiwan", "Shanghai", "Budapest", "Prague", "Cork", "Helsinki", "Warsaw"],
             "CO₂ kg/unit": [6.3, 9.8, 3.2, 2.8, 4.6, 5.8, 6.2 ],
         })
-        co2_factors_mfg["CO₂e kg/unit"] = co2_factors_mfg["CO₂e kg/unit"].map(lambda v: f"{v:.2f}")
+        co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.2f}")
         st.dataframe(co2_factors_mfg, hide_index=True, use_container_width=True)
     
     

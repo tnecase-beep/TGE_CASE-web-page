@@ -651,7 +651,7 @@ def run_sc1():
         color="CO2 Reduction % Display",
         template="plotly_white",
         color_continuous_scale="Viridis",
-        labels={"CO2e Reduction % Display": "CO₂e Reduction %"},
+        labels={"CO2 Reduction % Display": "CO₂e Reduction %"},
         title=f"{selected_metric_label} vs CO₂e Emissions ({selected_sheet})",
     )
     fig.update_coloraxes(colorbar=dict(ticksuffix="%"))
@@ -905,9 +905,9 @@ def run_sc1():
         st.markdown("#### 🌿 CO₂e Factors (kg CO₂e/unit)")
         co2_factors_mfg = pd.DataFrame({
             "From mfg": ["Taiwan", "Shanghai"],
-            "CO₂e kg/unit": [6.3, 9.8]
+            "CO₂ kg/unit": [6.3, 9.8]
         })
-        co2_factors_mfg["CO₂e kg/unit"] = co2_factors_mfg["CO₂e kg/unit"].map(lambda v: f"{v:.1f}")
+        co2_factors_mfg["CO₂ kg/unit"] = co2_factors_mfg["CO₂ kg/unit"].map(lambda v: f"{v:.1f}")
         st.dataframe(co2_factors_mfg.style.hide(axis="index"), use_container_width=True)
     
     
