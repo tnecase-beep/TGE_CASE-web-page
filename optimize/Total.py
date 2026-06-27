@@ -1748,13 +1748,13 @@ BASE_SOURCING_COST = {"Taiwan": 3.343692308, "Shanghai": 3.423384615}
 if (mode == "Normal Mode") and (model_id == "SC2F"):
     sourcing_cost_multiplier_pct = st.slider(
         "Sourcing Cost Surcharge for Asian facilites (%)",
-        min_value=50,
-        max_value=400,
-        value=100,
-        step=1,
-        help="Scales plant sourcing costs on : effective_cost = base_cost × (multiplier% / 100).",
+        min_value=0,
+        max_value=200,
+        value=0,
+        step=50,
+        help="Applies only to Asia (Taiwan/Shanghai) sourcing costs. 0% = no surcharge; effective_cost = base_cost × (1 + surcharge% / 100).",
     )
-    sourcing_cost_multiplier = float(sourcing_cost_multiplier_pct) / 100.0
+    sourcing_cost_multiplier = float(sourcing_cost_multiplier_pct) / 100.0 + 1.0
 
     # European carbon price parameter for SC2F (new facilities)
     co2_cost_per_ton_New = st.number_input(
