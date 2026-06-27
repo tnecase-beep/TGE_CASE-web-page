@@ -1468,9 +1468,9 @@ def _render_puzzle_mode():
         st.plotly_chart(fig_map, use_container_width=True)
 
         # ===========================================
-        # 🏭 PRODUCTION OUTBOUND BREAKDOWN (Puzzle)
+        # 🏭 Production Sourcing BREAKDOWN (Puzzle)
         # ===========================================
-        st.markdown("## 🏭 Production Outbound Breakdown")
+        st.markdown("## 🏭 Production Sourcing Breakdown")
 
         prod_sources = dict(results.get("puzzle_prod_sources_units", {}))
         unmet_units = float(results.get("puzzle_unmet_demand_units", 0.0))
@@ -2131,9 +2131,9 @@ if st.button("Run Optimization"):
             
             
             # ================================================================
-            # 🏭 PRODUCTION OUTBOUND PIE CHART
+            # 🏭 Production Sourcing PIE CHART
             # ================================================================
-            st.markdown("## 🏭 Production Outbound Breakdown")
+            st.markdown("## 🏭 Production Sourcing Breakdown")
             
             TOTAL_MARKET_DEMAND = 111000
             
@@ -2440,9 +2440,9 @@ if st.button("Run Optimization"):
                     st.plotly_chart(fig_map, use_container_width=True)
 
                     # ===================================================
-                    # 🏭 PRODUCTION OUTBOUND PIE CHART
+                    # 🏭 Production Sourcing PIE CHART
                     # ===================================================
-                    st.markdown("## 🏭 Production Outbound Breakdown ")
+                    st.markdown("## 🏭 Production Sourcing Breakdown ")
 
                     f1_vars = [v for v in model_uns.getVars() if v.VarName.startswith("f1[")]
                     f2_2_vars = [v for v in model_uns.getVars() if v.VarName.startswith("f2_2[")]
