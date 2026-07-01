@@ -115,12 +115,12 @@ def _on_factory_change():
 def _on_optimization_change():
     st.session_state["factory_radio"] = None
 
-# Collapsible "Optimization" group
-optimization_nav_options = ["Puzzle Mode", "Optimization Mode"]
+# Collapsible "Puzzle" group
+optimization_nav_options = ["Puzzle Mode"]
 if ENABLE_GAMIFICATION:
     optimization_nav_options.append("Gamification Mode")
 
-with st.sidebar.expander("📊 Optimization", expanded=True):
+with st.sidebar.expander("🧩 Puzzle", expanded=True):
     opt_choice = st.radio(
         "Select Mode:",
         optimization_nav_options,
