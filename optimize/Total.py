@@ -763,15 +763,23 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
         for p in sourcing_cost:
             sourcing_cost[p] *= tr
 
-    # Total units to fulfill
-    fulfill_pct = 1.0  # Demand fulfillment slider removed; assume 100%
-    total_units = total_demand * max(0.0, min(1.0, fulfill_pct))
-
-    # Production split across production facilities
+    # Production allocation across production facilities.
+    # `total_units` is the produced quantity (may fall below demand -> unmet demand).
+    prod_source_units = sel.get("prod_source_units", None)
     prod_source_shares = sel.get("prod_source_shares", None)
 
-    if isinstance(prod_source_shares, dict) and len(prod_source_shares) > 0:
-        # New Puzzle UI: user allocates a single share vector across ALL active production sites.
+    if isinstance(prod_source_units, dict) and len(prod_source_units) > 0:
+        # Units-based Puzzle UI: absolute production per facility.
+        # New facilities are capacity-capped in the UI; plants are uncapped up to demand.
+        active_sources = list(plants) + list(new_locs)
+        prod_by_source = {k: max(0.0, float(prod_source_units.get(k, 0.0))) for k in active_sources}
+        plant_prod = {p: prod_by_source.get(p, 0.0) for p in plants}
+        new_prod = {n: prod_by_source.get(n, 0.0) for n in new_locs}
+        total_units = float(sum(prod_by_source.values()))
+
+    elif isinstance(prod_source_shares, dict) and len(prod_source_shares) > 0:
+        total_units = total_demand  # legacy share UI always fulfills 100%
+        # Old Puzzle UI: user allocates a single share vector across ALL active production sites.
         active_sources = list(plants) + list(new_locs)
         shares = {k: float(prod_source_shares.get(k, 0.0)) for k in active_sources}
         shares = _normalize_shares(shares)
@@ -781,6 +789,7 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
         new_prod = {n: prod_by_source.get(n, 0.0) for n in new_locs}
 
     else:
+        total_units = total_demand  # legacy layer-split UI always fulfills 100%
         # Backward-compatible: old UI (Layer 1 share + separate normalization per layer)
         share_L1_total = float(sel.get("share_L1_total", 1.0))
         share_L1_total = max(0.0, min(1.0, share_L1_total))
@@ -943,10 +952,13 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
     lastmile_cost = 0.0
     co2_tr_L3 = {"air": 0.0, "Water": 0.0, "road": 0.0}
 
+    # Delivered quantity is capped at demand: excess production is not shipped downstream.
+    delivered_ratio = min(1.0, total_units / total_demand_safe)
+    delivered_units = min(total_units, total_demand)
     for d in dcs:
         mshare = _l3_modes(d)
         for r, dem in demand.items():
-            dem_eff = float(dem) * (total_units / total_demand_safe)
+            dem_eff = float(dem) * delivered_ratio
             base = dem_eff / float(len(dcs))
             for mo in ["air", "Water", "road"]:
                 q = base * mshare[mo]
@@ -971,7 +983,7 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
     co2_tr_Water = co2_tr_L1["Water"] + co2_tr_L2["Water"] + co2_tr_L2_new["Water"] + co2_tr_L3["Water"]
     co2_tr_road = co2_tr_L2["road"] + co2_tr_L2_new["road"] + co2_tr_L3["road"]
 
-    co2_lastmile_ton = (lastmile_CO2_kg / 1000.0) * total_units
+    co2_lastmile_ton = (lastmile_CO2_kg / 1000.0) * delivered_units
     co2_prod_ton = co2_prod_existing_ton + co2_prod_new_ton
     co2_total = co2_prod_ton + co2_tr_air + co2_tr_Water + co2_tr_road + co2_lastmile_ton
 
@@ -996,8 +1008,8 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
         + total_new_locs
     )
 
-    # Simple checks (capacity)
-    dc_out = total_units / float(len(dcs))
+    # Simple checks (capacity) — DCs only handle what is delivered downstream.
+    dc_out = delivered_units / float(len(dcs))
     dc_violations = {d: max(0.0, dc_out - float(cfg["dc_capacity"].get(d, 0.0))) for d in dcs}
 
     results = {
@@ -1130,10 +1142,12 @@ def _render_puzzle_mode():
             # Older Streamlit versions may not support `disabled=` on sliders.
             st.markdown(f"{label}: **{value_pct}%** (fixed)")
 
-    st.markdown("#### Production split")
+    st.markdown("#### Production allocation")
     st.caption(
-        "Set production shares across **all selected production facilities**. "
-        "The total is forced to **100%** (the last facility is auto-completed)."
+        "Allocate production **in units** across the selected production facilities. "
+        "New facilities are **capped at their capacity** (the only capacity constraint in the model); "
+        "plants are uncapped up to total demand. "
+        "If total production is below demand, the shortfall is reported as **unmet demand**."
     )
 
     # Production sources = Layer 1 plants + selected new production facilities (Layer 2)
@@ -1150,47 +1164,74 @@ def _render_puzzle_mode():
         st.warning("⚠️ You should choose at least one distribution center.")
         st.stop()
 
-    prod_share_pct_by_source = {}
-    remaining_pct = 100
+    PROD_STEP = 500
 
-    # Editable sliders for first N-1 sources (bounded by remaining), last one is fixed remainder.
-    for i, src in enumerate(prod_sources):
-        is_last = i == len(prod_sources) - 1
-        if not is_last and remaining_pct > 0:
-            k = f"pz_prod_share_pct_{src}"
-            # default: equal split
-            if k not in st.session_state:
-                st.session_state[k] = int(round(100 / max(len(prod_sources), 1)))
+    new_loc_capacity = cfg["new_loc_capacity"]
 
-            # clamp to current remaining to avoid Streamlit 'value out of range' errors
-            st.session_state[k] = int(max(0, min(int(st.session_state[k]), int(remaining_pct))))
+    st.caption(
+        f"Distribute the total demand of **{int(total_demand):,}** units across the selected "
+        "facilities. Each slider can grow into whatever demand budget is still free (and up to "
+        "its own capacity), so the total **never exceeds demand** — but adjusting one facility "
+        "never resets the others."
+    )
 
-            pct = st.slider(
-                f"{src} share (%)",
-                min_value=0,
-                max_value=int(remaining_pct),
-                value=int(st.session_state[k]),
-                step=1,
-                key=k,
-            )
-            prod_share_pct_by_source[src] = int(pct)
-            remaining_pct -= int(pct)
+    def _units_key(src: str) -> str:
+        return f"pz_prod_units_{src}"
+
+    # --- Default pass: every newly selected facility starts at 0. The user opens up exactly the
+    # facilities they want and allocates units deliberately; existing allocations are untouched.
+    for src in prod_sources:
+        k = _units_key(src)
+        if k not in st.session_state:
+            st.session_state[k] = 0
+
+    # Free budget = demand not yet allocated. Order-independent: each slider may grow by its own
+    # value + free budget, so raising a facility only consumes the free budget and never zeroes
+    # out the facilities listed after it.
+    allocated = sum(int(st.session_state[_units_key(s)]) for s in prod_sources)
+    free_budget = max(0, int(total_demand) - allocated)
+
+    prod_units_by_source = {}
+    for src in prod_sources:
+        is_new = src in new_locs
+        facility_cap = int(new_loc_capacity.get(src, 0)) if is_new else int(total_demand)
+
+        k = _units_key(src)
+        own = int(st.session_state[k])
+        # This slider can reclaim its own value plus any free budget, bounded by its capacity.
+        slider_max = int(max(0, min(facility_cap, own + free_budget)))
+        st.session_state[k] = int(max(0, min(own, slider_max)))
+
+        label = (
+            f"{src} production (units) — capacity {facility_cap:,}"
+            if is_new
+            else f"{src} production (units)"
+        )
+
+        if slider_max < PROD_STEP:
+            # No room to move: pin to the current (near-zero) value without a live slider.
+            st.markdown(f"{label}: **{int(st.session_state[k]):,}** _(no remaining demand budget)_")
+            val = int(st.session_state[k])
         else:
-            # Auto-complete: last source OR budget already exhausted by earlier sliders
-            pct = int(max(0, min(100, remaining_pct)))
-            _fixed_slider(f"{src} share (%)", pct, key=f"pz_prod_share_pct_fixed_{src}")
-            prod_share_pct_by_source[src] = int(pct)
-            remaining_pct -= pct
+            val = st.slider(label, min_value=0, max_value=slider_max, step=PROD_STEP, key=k)
 
-    # Summary: show a 'total bar' at the bottom
-    auto_pct = int(prod_share_pct_by_source.get(prod_sources[-1], 0))
-    manual_pct = 100 - auto_pct
-    st.caption(f"Manual sliders total: **{manual_pct}%**  •  Auto remainder: **{auto_pct}%**")
-    st.progress(min(max(manual_pct / 100.0, 0.0), 1.0))
-    _fixed_slider("Total share (%)", 100, key="pz_prod_total_fixed")
+        prod_units_by_source[src] = int(val)
 
-    # Convert to fractions for the solver-free puzzle computation
-    prod_source_shares = {k: float(v) / 100.0 for k, v in prod_share_pct_by_source.items()}
+    total_prod = int(sum(prod_units_by_source.values()))
+
+    # Summary bar + demand-satisfaction message (overproduction is impossible by construction).
+    st.caption(f"Total production: **{total_prod:,}** / demand **{int(total_demand):,}** units")
+    st.progress(min(max(total_prod / max(total_demand, 1.0), 0.0), 1.0))
+    if total_prod < total_demand:
+        st.warning(
+            f"⚠️ Demand not satisfied: **{int(total_demand) - total_prod:,}** of "
+            f"**{int(total_demand):,}** units unmet."
+        )
+    else:
+        st.success("✅ Demand fully satisfied.")
+
+    # Absolute unit allocation drives the solver-free puzzle computation.
+    prod_source_units = dict(prod_units_by_source)
     st.markdown("#### Transport mode shares")
     st.caption("Defaults: L1 Water=50% (air remainder), L2 Water=50% & air=50% (road remainder), L3 Water=50% & air=25% (road remainder). Shares are set in **percent (%).**")
 
@@ -1258,7 +1299,7 @@ def _render_puzzle_mode():
         "crossdocks": crossdocks,
         "dcs": dcs,
         "new_locs": new_locs,
-        "prod_source_shares": prod_source_shares,
+        "prod_source_units": prod_source_units,
         "l1_mode_share_by_plant": l1_mode_share_by_plant,
         "l2_mode_share_by_origin": l2_mode_share_by_origin,
         "l3_mode_share_by_dc": l3_mode_share_by_dc,
