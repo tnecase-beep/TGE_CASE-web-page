@@ -930,10 +930,12 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
     co2_tr_L2_new = {"air": 0.0, "Water": 0.0, "road": 0.0}
 
     for n in new_locs:
+        # Selecting a new facility means opening it: charge its fixed opening cost even if the
+        # user has not (yet) allocated any production units to it.
+        cost_new_fixed += cfg["new_loc_openingCost"].get(n, 0.0)
         if new_prod.get(n, 0.0) <= 1e-9:
             continue
         mshare = _l2_modes(n)
-        cost_new_fixed += cfg["new_loc_openingCost"].get(n, 0.0)  # open if used
         for d in dcs:
             base = new_prod[n] / float(len(dcs))
             for mo in ["air", "Water", "road"]:
