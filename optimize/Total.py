@@ -1166,7 +1166,7 @@ def _render_puzzle_mode():
         st.warning("⚠️ You should choose at least one distribution center.")
         st.stop()
 
-    PROD_STEP = 500
+    PROD_STEP = 100
 
     new_loc_capacity = cfg["new_loc_capacity"]
 
