@@ -1223,12 +1223,7 @@ def _render_puzzle_mode():
     # Summary bar + demand-satisfaction message (overproduction is impossible by construction).
     st.caption(f"Total production: **{total_prod:,}** / demand **{int(total_demand):,}** units")
     st.progress(min(max(total_prod / max(total_demand, 1.0), 0.0), 1.0))
-    if total_prod < total_demand:
-        st.warning(
-            f"⚠️ Demand not satisfied: **{int(total_demand) - total_prod:,}** of "
-            f"**{int(total_demand):,}** units unmet."
-        )
-    else:
+    if total_prod >= total_demand:
         st.success("✅ Demand fully satisfied.")
 
     # Absolute unit allocation drives the solver-free puzzle computation.
