@@ -738,11 +738,10 @@ def _compute_puzzle_results(cfg: dict, sel: dict, scen: dict) -> tuple[dict, dic
     dcs = list(sel["dcs"])
     new_locs = list(sel["new_locs"])
 
-    # Hard guards (keep UI permissive, but avoid divide-by-zero)
-    if len(plants) == 0:
-        plants = list(cfg["plants_all"])
-    if len(crossdocks) == 0:
-        crossdocks = list(cfg["crossdocks_all"])
+    # Guard only the retailer layer against divide-by-zero (every path ships to DCs).
+    # Do NOT re-add deselected plants/cross-docks: a network of only new facilities -> DCs is
+    # valid (new facilities ship straight to DCs), and silently restoring nodes the user turned
+    # off was surprising. When there are no plants, the L1/crossdock loops simply do nothing.
     if len(dcs) == 0:
         dcs = list(cfg["dcs_all"])
 
@@ -1251,7 +1250,7 @@ def _render_puzzle_mode():
 
     st.markdown("**Cross-dock / New → DC**")
     l2_mode_share_by_origin = {}
-    for o in (crossdocks or cfg["crossdocks_all"]) + list(new_locs):
+    for o in list(crossdocks) + list(new_locs):
         with st.expander(f"{o}", expanded=False):
             Water_pct = st.slider("Water share (%)", 0, 100, 50, 1, key=f"pz_l2_Water_{o}")
             rem_pct = 100 - int(Water_pct)
@@ -1274,7 +1273,7 @@ def _render_puzzle_mode():
 
     st.markdown("**DC → Retailer**")
     l3_mode_share_by_dc = {}
-    for d in (dcs or cfg["dcs_all"]):
+    for d in list(dcs):
         with st.expander(f"{d}", expanded=False):
             Water_pct = st.slider("Water share (%)", 0, 100, 50, 1, key=f"pz_l3_Water_{d}")
             rem_pct = 100 - int(Water_pct)
