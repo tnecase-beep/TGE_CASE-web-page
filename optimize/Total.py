@@ -1327,8 +1327,8 @@ def _render_puzzle_mode():
         MIN_COST_BASE_CASE_EUR = 12_771_461
         MIN_COST_BASE_CASE_CO2_TON = 1_582.42
 
-        MIN_CO2_BASE_CASE_EUR = 20_354_153
-        MIN_CO2_BASE_CASE_CO2_TON = 708.62
+        MIN_CO2_BASE_CASE_EUR = 21_089_102
+        MIN_CO2_BASE_CASE_CO2_TON = 704.09
 
         def _pct_change(curr: float, base: float) -> float:
             base = float(base)
