@@ -1307,7 +1307,17 @@ def _render_puzzle_mode():
         "service_level": 0.9,
     }
 
-    if st.button("Evaluate performance of the supply chain configuration", key="pz_run"):
+    # Block evaluation unless the full demand is satisfied, so users can't celebrate a "good"
+    # score for a configuration that fails to serve the market.
+    demand_satisfied = total_prod >= total_demand
+    if not demand_satisfied:
+        st.info("ℹ️ Satisfy the full demand to unlock the evaluation of your supply chain.")
+
+    if st.button(
+        "Evaluate performance of the supply chain configuration",
+        key="pz_run",
+        disabled=not demand_satisfied,
+    ):
         results, flows = _compute_puzzle_results(cfg, sel, scen)
 
         # Persist the last run so users can submit after exploring the outputs.
