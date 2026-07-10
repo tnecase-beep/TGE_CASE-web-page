@@ -236,7 +236,7 @@ def run_sc1():
     #     initial_sidebar_state="expanded"
     # )
     
-    st.title("🏭 Scenario 1: Service Speed vs. Emission Reductions")
+    st.title("🏭 Scenario 1: Process Optimization")
     
     
     
@@ -1025,10 +1025,10 @@ def run_sc1():
     
     locations = pd.concat([plants, crossdocks, dcs, retailers])
     color_map = {
-        "Plant": "purple",
-        "Cross-dock": "dodgerblue",
-        "Distribution Center": "black",
-        "Retailer Hub": "red"
+        "Manufacturers": "#8E24AA",                        # Plant – mor
+        "Cross-dock": "#4285F4",                           # Cross-dock – mavi
+        "DC": "#000000",                                   # Distribution Center – siyah
+        "Retail": "#EA4335",                               # Retailer Hub – kırmızı
     }
     
     fig_map = px.scatter_geo(
@@ -1087,8 +1087,8 @@ def run_sc1():
     L3_AIR   = ["Layer3Air", "Layer3air"]
     L3_ROAD  = ["Layer3Road", "Layer3road"]
 
-    # --- Layer 1: Plants → Cross-docks (Air/Water only) ---
-    st.markdown("### Plants → Cross-docks")
+    # --- Layer 1: Manufacturers → Cross-docks (Air/Water only) ---
+    st.markdown("### Manufacturers → Cross-docks")
     col1, col2 = st.columns(2)
     l1_water = get_value_safe_any(L1_WATER)
     l1_air = get_value_safe_any(L1_AIR)
@@ -1112,7 +1112,7 @@ def run_sc1():
     st.markdown("---")
 
     # --- Layer 3: DCs → Retailer Hubs ---
-    st.markdown("### DCs → Retailer Hubs")
+    st.markdown("### DCs → Retailer Hub")
     col1, col2, col3 = st.columns(3)
     l3_water = get_value_safe_any(L3_WATER)
     l3_air = get_value_safe_any(L3_AIR)

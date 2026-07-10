@@ -154,7 +154,7 @@ def run_sc2():
     #     initial_sidebar_state="expanded"
     # )
     
-    st.title("🏭 Scenario 2: Local Sourcing for Resilience and Impact")
+    st.title("🏭 Scenario 2: Supply Chain Transformation")
     
     # ----------------------------------------------------
     # 🧭 CACHED DATA LOADERS
@@ -1063,19 +1063,19 @@ def run_sc2():
     
     # --- Define colors & sizes ---
     color_map = {
-        "Plant": "purple",
-        "Cross-dock": "dodgerblue",
-        "Distribution Center": "black",
-        "Retailer Hub": "red",
-        "New Production Facility": "deepskyblue"
+    "Manufacturers": "#8E24AA",                        # Plant – mor
+    "Cross-dock": "#4285F4",                           # Cross-dock – mavi
+    "DC": "#000000",                                   # Distribution Center – siyah
+    "Retail": "#EA4335",                               # Retailer Hub – kırmızı
+    "Alternatives production facilities": "#4FC3F7",   # New Production Facility – açık mavi
     }
     
     size_map = {
-        "Plant": 15,
+        "Manufacturers": 15,
         "Cross-dock": 14,
-        "Distribution Center": 16,
-        "Retailer Hub": 20,
-        "New Production Facility": 14
+        "DC": 16,
+        "Retail": 20,
+        "Alternatives production facilities": 14
     }
     
     # --- Create Map ---
@@ -1159,9 +1159,9 @@ def run_sc2():
     
     
     # Layer summaries
-    display_layer_summary("Plants → Cross-docks", "f1", include_road=False)
+    display_layer_summary("Manufacturers → Cross-docks", "f1", include_road=False)
     display_layer_summary("Cross-docks → DCs", "f2", include_road=True)
-    display_layer_summary("New Facilities → DCs", "f2_2", include_road=True)
+    display_layer_summary("Alternatives production facilities → DCs", "f2_2", include_road=True)
     display_layer_summary("DCs → Retailer Hubs", "f3", include_road=True)
 
     # ----------------------------------------------------

@@ -164,14 +164,11 @@ else:
         **Manufacturers (Taiwan & Shanghai) → Cross-docks ( or European Manufacturers) → Distribution Centers → Retailer Hubs → Local Customers**.
 
         **Get started:** use the **left Navigation** to open a page.
-        - **Optimization:** open **Optimization Mode** or **Puzzle Mode** directly from the sidebar.
-        - **Dashboards (Scenario 1 / Scenario 2):** inspect the network structure and facilities.
+        - **Puzzle Mode:** configure the network manually.
+        - **Dashboards:** inspect the network structure and facilities. -->Dashboards: explore the optimal network structure through different scenarios.
+            -**Scenario 1:** Process Optimization within the current network by adjusting the emission reduction target.
+            -**Scenario 2:** Supply Chain Transformation with structural changes via alternative EU production. Evaluate the impact of carbon pricing and sourcing cost changes.
 
-        **Optimization pages:**
-        - **🧩 Puzzle Mode:** Manually build a feasible network (facility selection, sourcing strategy, and transport mode mix) and see **base case comparison** + **cost/CO₂e implications**.
-        - **Optimization Mode:** run scenarios and compare **cost vs CO₂e** (maps, flow breakdowns, and distributions).
-        - **Scenario 1: Process Optimization** within the current network structure by changing the emission reduction target.
-        - **Scenario 2: Supply Chain Transformation** allows **structural change via local EU production** and evaluates trade-offs. Allows seeing the effect of carbon pricing or sourcing cost changes. 
         """
     )
     st.stop()
@@ -450,7 +447,7 @@ def render_transport_flows_by_mode(model):
     st.markdown("## 🚚 Transport Flows by Mode")
     display_layer_summary_model(model, "Plants → Cross-docks", "f1", include_road=False)
     display_layer_summary_model(model, "Cross-docks → DCs", "f2", include_road=True)
-    display_layer_summary_model(model, "New Facilities → DCs", "f2_2", include_road=True)
+    display_layer_summary_model(model, "Alternative Production Facilities → DCs", "f2_2", include_road=True)
     display_layer_summary_model(model, "DCs → Retailer Hubs", "f3", include_road=True)
 
 
@@ -1109,18 +1106,18 @@ def _render_puzzle_mode():
     st.markdown("#### Facility selection")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.caption("Plants")
+        st.caption("Manufacturers")
         plants = [p for p in cfg["plants_all"] if st.checkbox(p, value=True, key=f"pz_pl_{p}")]
     with col2:
         st.caption("Cross-docks")
         crossdocks = [c for c in cfg["crossdocks_all"] if st.checkbox(c, value=True, key=f"pz_cd_{c}")]
     with col3:
+        st.caption("Alternative Production Facilities")
+        new_locs = [n for n in cfg["new_locs_all"] if st.checkbox(n, value=False, key=f"pz_new_{n}")]
+    with col4:
         st.caption("Distribution Centers")
         dcs = [d for d in cfg["dcs_all"] if st.checkbox(d, value=True, key=f"pz_dc_{d}")]
-    with col4:
-        st.caption("New Facilities")
-        new_locs = [n for n in cfg["new_locs_all"] if st.checkbox(n, value=False, key=f"pz_new_{n}")]
-
+    
     total_demand = int(sum(cfg["demand"].values()))
     st.info(f"Total demand (units): **{total_demand:,}**")
 
@@ -1145,10 +1142,11 @@ def _render_puzzle_mode():
 
     st.markdown("#### Production allocation")
     st.caption(
-        "Allocate production **in units** across the selected production facilities. "
-        "New facilities are **capped at their capacity** (the only capacity constraint in the model); "
-        "plants are uncapped up to total demand. "
-        "If total production is below demand, the shortfall is reported as **unmet demand**."
+        """ 
+        Allocate the total average daily demand (111,000 units) across the selected production facilities. Note that alternative production facilities have production capacity limits and opening costs, whereas the current manufacturers (Taiwan and Shanghai) have sufficient capacity to meet TNE's demand.  
+        If the allocated production does not satisfy the total demand, the following warning will appear: **Capacity is insufficient to meet the total demand.**
+
+        """
     )
 
     # Production sources = Layer 1 plants + selected new production facilities (Layer 2)
@@ -1224,7 +1222,7 @@ def _render_puzzle_mode():
     st.caption(f"Total production: **{total_prod:,}** / demand **{int(total_demand):,}** units")
     st.progress(min(max(total_prod / max(total_demand, 1.0), 0.0), 1.0))
     if total_prod >= total_demand:
-        st.success("✅ Demand fully satisfied.")
+        st.success("✅ Demand is fully satisfied.")
 
     # Absolute unit allocation drives the solver-free puzzle computation.
     prod_source_units = dict(prod_units_by_source)
@@ -1360,13 +1358,13 @@ def _render_puzzle_mode():
             st.metric(
                 "Cost (€)",
                 f"{MIN_COST_BASE_CASE_EUR:,.0f}",
-                delta=f"{_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR):+,.2f}% your cost",
+                delta=f"Your cost is {_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR):+,.2f}%.",
                 delta_color="inverse",
             )
             st.metric(
                 "CO₂e (tons)",
                 f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
-                delta=f"{_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}% your CO₂e",
+                delta=f"Your CO₂e is {_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}%.",
                 delta_color="inverse",
             )
 
@@ -1375,13 +1373,13 @@ def _render_puzzle_mode():
             st.metric(
                 "Cost (€)",
                 f"{MIN_CO2_BASE_CASE_EUR:,.0f}",
-                delta=f"{_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR):+,.2f}% your cost",
+                delta=f"Your cost is {_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR):+,.2f}%.",
                 delta_color="inverse",
             )
             st.metric(
                 "CO₂e (tons)",
                 f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
-                delta=f"{_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}% your CO₂e",
+                delta=f"Your CO₂e is {_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}%.",
                 delta_color="inverse",
             )
 
@@ -1402,7 +1400,7 @@ def _render_puzzle_mode():
         # ===========================================
         # 🌍 MAP (Puzzle Mode)
         # ===========================================
-        st.markdown("## 🌍 Global Supply Chain Map")
+        st.markdown("## 🌍 Global Supply Chain Network")
 
         nodes = [
             ("Plant", 31.230416, 121.473701, "Shanghai"),
@@ -1459,11 +1457,11 @@ def _render_puzzle_mode():
             locations = pd.concat([locations, df_events], ignore_index=True)
 
         color_map = {
-            "Plant": "purple",
-            "Cross-dock": "dodgerblue",
-            "DC": "black",
-            "Retail": "red",
-            "New Production Facility": "deepskyblue",
+            "Manufacturers": "#8E24AA",
+            "Cross-dock": "#4285F4",
+            "DC": "#000000",
+            "Retail": "#EA4335",
+            "Alternatives production facilities": "#4FC3F7",
             "Event: Suez Canal Blockade": "gold",
             "Event: Volcano Eruption": "orange",
             "Event: Oil Crisis": "brown",
@@ -1471,11 +1469,11 @@ def _render_puzzle_mode():
         }
 
         size_map = {
-            "Plant": 15,
+            "Manufacturers": 15,
             "Cross-dock": 14,
             "DC": 16,
             "Retail": 20,
-            "New Production Facility": 14,
+            "Alternatives production facilities": 14,
             "Event: Suez Canal Blockade": 18,
             "Event: Volcano Eruption": 18,
             "Event: Oil Crisis": 18,
@@ -1608,30 +1606,26 @@ def _render_puzzle_mode():
 
         # Capacity sanity check
         viol = results.get("dc_capacity_violations", {})
-        if any(v > 1e-6 for v in viol.values()):
-            with st.expander("⚠️ Capacity warnings"):
-                st.write("Some DC capacities are exceeded under equal-allocation assumptions:")
-                st.dataframe(pd.DataFrame({"DC": list(viol.keys()), "Excess units": list(viol.values())}).set_index("DC"))
 
         # Flow totals by mode
         st.markdown("## 🚚 Transport Flows by Mode")
         cL1, cL2, cL2n, cL3 = st.columns(4)
         with cL1:
-            st.caption("Plants")
+            st.caption("Manufacturers -> Cross-docs")
             st.metric("✈️ Air", f"{flows['L1']['air']:,.0f}")
             st.metric("🚢 Water", f"{flows['L1']['Water']:,.0f}")
         with cL2:
-            st.caption("Cross-docks ")
+            st.caption("Cross-docks ->DCs ")
             st.metric("✈️ Air", f"{flows['L2']['air']:,.0f}")
             st.metric("🚢 Water", f"{flows['L2']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L2']['road']:,.0f}")
         with cL2n:
-            st.caption("New Facilities")
+            st.caption("Alternatives production facilities ->DCs")
             st.metric("✈️ Air", f"{flows['L2_new']['air']:,.0f}")
             st.metric("🚢 Water", f"{flows['L2_new']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L2_new']['road']:,.0f}")
         with cL3:
-            st.caption("DCs → Retailer Hubs")
+            st.caption("DCs → Retailer Hub")
             st.metric("✈️ Air", f"{flows['L3']['air']:,.0f}")
             st.metric("🚢 Water", f"{flows['L3']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L3']['road']:,.0f}")
@@ -1778,11 +1772,11 @@ co2_pct = positive_input("Emission Reduction Target %", 50.0) / 100
 # Model selection has no effect there, so we hide the selector.
 MODEL_LABEL_TO_ID = {
     "Scenario 1 – Existing Facilities Only (SC1F)": "SC1F",
-    "Scenario 2 – Allow New Facilities (SC2F)": "SC2F",
+    "Scenario 2 – Allow Alternative Production Facilities (SC2F)": "SC2F",
 }
 
 if mode == "Gamification Mode":
-    model_choice_label = "Scenario 2 – Allow New Facilities (SC2F)"
+    model_choice_label = "Scenario 2 – Allow Alternative Production Facilities (SC2F)"
     model_id = "SC2F"
 else:
     model_choice_label = st.selectbox(
@@ -1891,7 +1885,7 @@ if st.button("Run Optimization"):
                 # ------------------------------------------------------------
                 try:
                     # Always benchmark against Scenario 2 optimal (Allow New Facilities)
-                    benchmark_label = "Scenario 2 Optimal (Allow New Facilities)"
+                    benchmark_label = "Scenario 2 Optimal (Allow Alternative Production Facilities)"
                 
                     # Use the same CO₂ price the user entered
                     # - SC1F seçiliyse: co2_cost_per_ton var
@@ -2012,7 +2006,7 @@ if st.button("Run Optimization"):
             # ===========================================
             # 🌍 MAP (no more pd errors!)
             # ===========================================
-            st.markdown("## 🌍 Global Supply Chain Map")
+            st.markdown("## 🌍 Global Supply Chain Network")
 
             nodes = [
                 ("Plant", 31.230416, 121.473701, "Shanghai"),
@@ -2370,7 +2364,7 @@ if st.button("Run Optimization"):
                     # ===================================================
                     # 🌍 MAP
                     # ===================================================
-                    st.markdown("## 🌍 Global Supply Chain Map ")
+                    st.markdown("## 🌍 Global Supply Chain Network ")
 
                     nodes = [
                     ("Plant", 31.230416, 121.473701, "Shanghai"),
