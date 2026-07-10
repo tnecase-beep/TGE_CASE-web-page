@@ -1167,12 +1167,7 @@ def _render_puzzle_mode():
 
     new_loc_capacity = cfg["new_loc_capacity"]
 
-    st.caption(
-        f"Distribute the total demand of **{int(total_demand):,}** units across the selected "
-        "facilities. Each slider can grow into whatever demand budget is still free (and up to "
-        "its own capacity), so the total **never exceeds demand** — but adjusting one facility "
-        "never resets the others."
-    )
+
 
     def _units_key(src: str) -> str:
         return f"pz_prod_units_{src}"
