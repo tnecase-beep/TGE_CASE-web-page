@@ -1025,10 +1025,10 @@ def run_sc1():
     
     locations = pd.concat([plants, crossdocks, dcs, retailers])
     color_map = {
-        "Manufacturers": "#8E24AA",                        # Plant – mor
-        "Cross-dock": "#4285F4",                           # Cross-dock – mavi
-        "DC": "#000000",                                   # Distribution Center – siyah
-        "Retail": "#EA4335",                               # Retailer Hub – kırmızı
+        "Plant": "#8E24AA",
+        "Cross-dock": "#4285F4",
+        "Distribution Center": "#000000",
+        "Retailer Hub": "#EA4335",
     }
     
     fig_map = px.scatter_geo(

@@ -1063,19 +1063,19 @@ def run_sc2():
     
     # --- Define colors & sizes ---
     color_map = {
-    "Manufacturers": "#8E24AA",                        # Plant – mor
-    "Cross-dock": "#4285F4",                           # Cross-dock – mavi
-    "DC": "#000000",                                   # Distribution Center – siyah
-    "Retail": "#EA4335",                               # Retailer Hub – kırmızı
-    "Alternatives production facilities": "#4FC3F7",   # New Production Facility – açık mavi
+    "Plant": "#8E24AA",
+    "Cross-dock": "#4285F4",
+    "Distribution Center": "#000000",
+    "Retailer Hub": "#EA4335",
+    "New Production Facility": "#4FC3F7",
     }
-    
+
     size_map = {
-        "Manufacturers": 15,
+        "Plant": 15,
         "Cross-dock": 14,
-        "DC": 16,
-        "Retail": 20,
-        "Alternatives production facilities": 14
+        "Distribution Center": 16,
+        "Retailer Hub": 20,
+        "New Production Facility": 14
     }
     
     # --- Create Map ---

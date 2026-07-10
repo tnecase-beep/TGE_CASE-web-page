@@ -218,11 +218,11 @@ with hdr_right:
     _df_all = pd.DataFrame(_all_nodes, columns=["Type", "Lat", "Lon", "City"])
 
     _color_map_small = {
-        "Plant": "purple",
-        "Cross-dock": "dodgerblue",
-        "DC": "black",
-        "Retail": "red",
-        "EU Facility": "deepskyblue",
+        "Plant": "#8E24AA",
+        "Cross-dock": "#4285F4",
+        "DC": "#000000",
+        "Retail": "#EA4335",
+        "EU Facility": "#4FC3F7",
     }
 
     _fig_small = px.scatter_geo(
@@ -1452,11 +1452,11 @@ def _render_puzzle_mode():
             locations = pd.concat([locations, df_events], ignore_index=True)
 
         color_map = {
-            "Manufacturers": "#8E24AA",
+            "Plant": "#8E24AA",
             "Cross-dock": "#4285F4",
             "DC": "#000000",
             "Retail": "#EA4335",
-            "Alternatives production facilities": "#4FC3F7",
+            "New Production Facility": "#4FC3F7",
             "Event: Suez Canal Blockade": "gold",
             "Event: Volcano Eruption": "orange",
             "Event: Oil Crisis": "brown",
@@ -1464,11 +1464,11 @@ def _render_puzzle_mode():
         }
 
         size_map = {
-            "Manufacturers": 15,
+            "Plant": 15,
             "Cross-dock": 14,
             "DC": 16,
             "Retail": 20,
-            "Alternatives production facilities": 14,
+            "New Production Facility": 14,
             "Event: Suez Canal Blockade": 18,
             "Event: Volcano Eruption": 18,
             "Event: Oil Crisis": 18,
@@ -2072,11 +2072,11 @@ if st.button("Run Optimization"):
             # Marker colors & sizes
             # ================================================================
             color_map = {
-                "Plant": "purple",
-                "Cross-dock": "dodgerblue",
-                "DC": "black",
-                "Retail": "red",
-                "New Production Facility": "deepskyblue",
+                "Plant": "#8E24AA",
+                "Cross-dock": "#4285F4",
+                "DC": "#000000",
+                "Retail": "#EA4335",
+                "New Production Facility": "#4FC3F7",
                 "Event: Suez Canal Blockade": "gold",
                 "Event: Volcano Eruption": "orange",
                 "Event: Oil Crisis": "brown",
@@ -2420,11 +2420,11 @@ if st.button("Run Optimization"):
                         locations = pd.concat([locations, df_events], ignore_index=True)
 
                     color_map = {
-                        "Plant": "purple",
-                        "Cross-dock": "dodgerblue",
-                        "DC": "black",
-                        "Retail": "red",
-                        "New Production Facility": "deepskyblue",
+                        "Plant": "#8E24AA",
+                        "Cross-dock": "#4285F4",
+                        "DC": "#000000",
+                        "Retail": "#EA4335",
+                        "New Production Facility": "#4FC3F7",
                         "Event: Suez Canal Blockade": "gold",
                         "Event: Volcano Eruption": "orange",
                         "Event: Oil Crisis": "brown",
