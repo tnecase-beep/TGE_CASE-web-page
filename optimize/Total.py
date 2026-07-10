@@ -1348,35 +1348,24 @@ def _render_puzzle_mode():
         st.markdown("#### 🔎 Base case comparison")
         bc1, bc2 = st.columns(2)
 
+        def _delta_badge(pct: float, what: str):
+            arrow = "↑" if pct > 0 else "↓"
+            color = "red" if pct > 0 else "green"
+            st.markdown(f":{color}[{arrow} Your {what} is {pct:+,.2f}%.]")
+
         with bc1:
             st.markdown("**Min Cost base case**")
-            st.metric(
-                "Cost (€)",
-                f"{MIN_COST_BASE_CASE_EUR:,.0f}",
-                delta=f"Your cost is {_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR):+,.2f}%.",
-                delta_color="inverse",
-            )
-            st.metric(
-                "CO₂e (tons)",
-                f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}",
-                delta=f"Your CO₂e is {_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON):+,.2f}%.",
-                delta_color="inverse",
-            )
+            st.metric("Cost (€)", f"{MIN_COST_BASE_CASE_EUR:,.0f}")
+            _delta_badge(_pct_change(total_cost_val, MIN_COST_BASE_CASE_EUR), "cost")
+            st.metric("CO₂e (tons)", f"{MIN_COST_BASE_CASE_CO2_TON:,.2f}")
+            _delta_badge(_pct_change(total_co2_val, MIN_COST_BASE_CASE_CO2_TON), "CO₂e")
 
         with bc2:
             st.markdown("**Min CO₂e base case**")
-            st.metric(
-                "Cost (€)",
-                f"{MIN_CO2_BASE_CASE_EUR:,.0f}",
-                delta=f"Your cost is {_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR):+,.2f}%.",
-                delta_color="inverse",
-            )
-            st.metric(
-                "CO₂e (tons)",
-                f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}",
-                delta=f"Your CO₂e is {_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON):+,.2f}%.",
-                delta_color="inverse",
-            )
+            st.metric("Cost (€)", f"{MIN_CO2_BASE_CASE_EUR:,.0f}")
+            _delta_badge(_pct_change(total_cost_val, MIN_CO2_BASE_CASE_EUR), "cost")
+            st.metric("CO₂e (tons)", f"{MIN_CO2_BASE_CASE_CO2_TON:,.2f}")
+            _delta_badge(_pct_change(total_co2_val, MIN_CO2_BASE_CASE_CO2_TON), "CO₂e")
 
         st.subheader("🌿 CO₂e Emissions")
         st.json({k: f"{_safe_float(v):.2f}" for k, v in {
