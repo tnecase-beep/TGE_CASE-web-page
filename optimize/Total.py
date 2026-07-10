@@ -166,8 +166,8 @@ else:
         **Get started:** use the **left Navigation** to open a page.
         - **Puzzle Mode:** configure the network manually.
         - **Dashboards:** inspect the network structure and facilities. -->Dashboards: explore the optimal network structure through different scenarios.
-            -**Scenario 1:** Process Optimization within the current network by adjusting the emission reduction target.
-            -**Scenario 2:** Supply Chain Transformation with structural changes via alternative EU production. Evaluate the impact of carbon pricing and sourcing cost changes.
+            - **Scenario 1:** Process Optimization within the current network by adjusting the emission reduction target.
+            - **Scenario 2:** Supply Chain Transformation with structural changes via alternative EU production. Evaluate the impact of carbon pricing and sourcing cost changes.
 
         """
     )
