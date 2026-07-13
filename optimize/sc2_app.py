@@ -999,9 +999,9 @@ def run_sc2():
     # ----------------------------------------------------
     st.markdown("## 🌍 Global Supply Chain Network")
     
-    # --- Plants (f1, China region) ---
-    plants = pd.DataFrame({
-    "Type": ["Plant", "Plant"],
+    # --- Manufacturers (f1, China region) ---
+    manufacturers = pd.DataFrame({
+    "Type": ["Manufacturer", "Manufacturer"],
     "Lat": [31.230416, 23.553100],
     "Lon": [121.473701, 121.021100]
     })
@@ -1019,7 +1019,7 @@ def run_sc2():
     })
 
     retailers = pd.DataFrame({
-        "Type": ["Retailer Hub"] * 7,
+        "Type": ["Retail Hub"] * 7,
         "Lat": [50.935173, 51.219890, 50.061430, 54.902720, 59.911491, 53.350140, 59.329440],
         "Lon": [6.953101, 4.403460, 19.936580, 23.909610, 10.757933, -6.266155, 18.068610]
     })
@@ -1050,7 +1050,7 @@ def run_sc2():
     
     if active_facilities:
         new_facilities = pd.DataFrame({
-            "Type": "New Production Facility",
+            "Type": "Alternative Production Facility",
             "Lat": [lat for _, lat, _ in active_facilities],
             "Lon": [lon for _, _, lon in active_facilities],
             "Name": [col for col, _, _ in active_facilities]
@@ -1059,23 +1059,23 @@ def run_sc2():
         new_facilities = pd.DataFrame(columns=["Type", "Lat", "Lon", "Name"])
         
     # --- Combine all ---
-    locations = pd.concat([plants, crossdocks, dcs, retailers, new_facilities])
+    locations = pd.concat([manufacturers, crossdocks, dcs, retailers, new_facilities])
     
     # --- Define colors & sizes ---
     color_map = {
-    "Plant": "#8E24AA",
+    "Manufacturer": "#8E24AA",
     "Cross-dock": "#4285F4",
     "Distribution Center": "#000000",
-    "Retailer Hub": "#EA4335",
-    "New Production Facility": "#4FC3F7",
+    "Retail Hub": "#EA4335",
+    "Alternative Production Facility": "#4FC3F7",
     }
 
     size_map = {
-        "Plant": 15,
+        "Manufacturer": 15,
         "Cross-dock": 14,
         "Distribution Center": 16,
-        "Retailer Hub": 20,
-        "New Production Facility": 14
+        "Retail Hub": 20,
+        "Alternative Production Facility": 14
     }
     
     # --- Create Map ---
@@ -1088,7 +1088,6 @@ def run_sc2():
         hover_name="Type",
         projection="natural earth",
         scope="world",
-        title="Global Supply Chain Structure",
         template="plotly_white"
     )
     
@@ -1162,7 +1161,7 @@ def run_sc2():
     display_layer_summary("Manufacturers → Cross-docks", "f1", include_road=False)
     display_layer_summary("Cross-docks → DCs", "f2", include_road=True)
     display_layer_summary("Alternatives production facilities → DCs", "f2_2", include_road=True)
-    display_layer_summary("DCs → Retailer Hubs", "f3", include_road=True)
+    display_layer_summary("DCs → Retail Hubs", "f3", include_road=True)
 
     # ----------------------------------------------------
     # RAW DATA VIEW

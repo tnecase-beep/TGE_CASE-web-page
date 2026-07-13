@@ -161,7 +161,7 @@ else:
     st.markdown(
         """
         **Case synopsis :** We study a global supply chain with four layers:  
-        **Manufacturers (Taiwan & Shanghai) → Cross-docks ( or European Manufacturers) → Distribution Centers → Retailer Hubs → Local Customers**.
+        **Manufacturers (Taiwan & Shanghai) → Cross-docks ( or European Manufacturers) → Distribution Centers → Retail Hubs → Local Customers**.
 
         **Get started:** use the **left Navigation** to open a page.
         - **Puzzle Mode:** configure the network manually.
@@ -188,8 +188,8 @@ with hdr_left:
 with hdr_right:
     # Small static map with ALL potential nodes (plants, cross-docks, DCs, retailers, and EU facilities)
     _all_nodes = [
-        ("Plant", 31.230416, 121.473701, "Shanghai"),
-        ("Plant", 23.553100, 121.021100, "Taiwan"),
+        ("Manufacturer", 31.230416, 121.473701, "Shanghai"),
+        ("Manufacturer", 23.553100, 121.021100, "Taiwan"),
 
         ("Cross-dock", 48.856610, 2.352220, "Paris"),
         ("Cross-dock", 54.352100, 18.646400, "Gdansk"),
@@ -200,29 +200,29 @@ with hdr_right:
         ("DC", 56.946285, 24.105078, "Riga"),
         ("DC", 36.168056, -5.348611, "Algeciras"),
 
-        ("Retail", 50.935173, 6.953101, "Cologne"),
-        ("Retail", 51.219890, 4.403460, "Antwerp"),
-        ("Retail", 50.061430, 19.936580, "Krakow"),
-        ("Retail", 54.902720, 23.909610, "Kaunas"),
-        ("Retail", 59.911491, 10.757933, "Oslo"),
-        ("Retail", 53.350140, -6.266155, "Dublin"),
-        ("Retail", 59.329440, 18.068610, "Stockholm"),
+        ("Retail Hub", 50.935173, 6.953101, "Cologne"),
+        ("Retail Hub", 51.219890, 4.403460, "Antwerp"),
+        ("Retail Hub", 50.061430, 19.936580, "Krakow"),
+        ("Retail Hub", 54.902720, 23.909610, "Kaunas"),
+        ("Retail Hub", 59.911491, 10.757933, "Oslo"),
+        ("Retail Hub", 53.350140, -6.266155, "Dublin"),
+        ("Retail Hub", 59.329440, 18.068610, "Stockholm"),
 
-        ("EU Facility", 47.497913, 19.040236, "Budapest"),
-        ("EU Facility", 50.088040, 14.420760, "Prague"),
-        ("EU Facility", 51.898514, -8.475604, "Cork"),
-        ("EU Facility", 60.169520, 24.935450, "Helsinki"),
-        ("EU Facility", 52.229770, 21.011780, "Warsaw"),
+        ("Alternative Production Facility", 47.497913, 19.040236, "Budapest"),
+        ("Alternative Production Facility", 50.088040, 14.420760, "Prague"),
+        ("Alternative Production Facility", 51.898514, -8.475604, "Cork"),
+        ("Alternative Production Facility", 60.169520, 24.935450, "Helsinki"),
+        ("Alternative Production Facility", 52.229770, 21.011780, "Warsaw"),
     ]
 
     _df_all = pd.DataFrame(_all_nodes, columns=["Type", "Lat", "Lon", "City"])
 
     _color_map_small = {
-        "Plant": "#8E24AA",
+        "Manufacturer": "#8E24AA",
         "Cross-dock": "#4285F4",
         "DC": "#000000",
-        "Retail": "#EA4335",
-        "EU Facility": "#4FC3F7",
+        "Retail Hub": "#EA4335",
+        "Alternative Production Facility": "#4FC3F7",
     }
 
     _fig_small = px.scatter_geo(
@@ -448,7 +448,7 @@ def render_transport_flows_by_mode(model):
     display_layer_summary_model(model, "Plants → Cross-docks", "f1", include_road=False)
     display_layer_summary_model(model, "Cross-docks → DCs", "f2", include_road=True)
     display_layer_summary_model(model, "Alternative Production Facilities → DCs", "f2_2", include_road=True)
-    display_layer_summary_model(model, "DCs → Retailer Hubs", "f3", include_road=True)
+    display_layer_summary_model(model, "DCs → Retail Hubs", "f3", include_road=True)
 
 
 def render_cost_emission_distribution(results: dict):
@@ -1143,8 +1143,7 @@ def _render_puzzle_mode():
     st.markdown("#### Production allocation")
     st.caption(
         """ 
-        Allocate the total average daily demand (111,000 units) across the selected production facilities. Note that alternative production facilities have production capacity limits and opening costs, whereas the current manufacturers (Taiwan and Shanghai) have sufficient capacity to meet TNE's demand.  
-        If the allocated production does not satisfy the total demand, the following warning will appear: **Capacity is insufficient to meet the total demand.**
+        Allocate the total average daily demand (111,000 units) across the selected production facilities. Note that alternative production facilities have production capacity limits and opening costs, whereas the current manufacturers (Taiwan and Shanghai) have sufficient capacity to meet TNE's demand.
 
         """
     )
@@ -1387,27 +1386,27 @@ def _render_puzzle_mode():
         st.markdown("## 🌍 Global Supply Chain Network")
 
         nodes = [
-            ("Plant", 31.230416, 121.473701, "Shanghai"),
-            ("Plant", 23.553100, 121.021100, "Taiwan"),
+            ("Manufacturer", 31.230416, 121.473701, "Shanghai"),
+            ("Manufacturer", 23.553100, 121.021100, "Taiwan"),
             ("Cross-dock", 48.856610, 2.352220, "Paris"),
             ("Cross-dock", 54.352100, 18.646400, "Gdansk"),
             ("Cross-dock", 48.208500, 16.372100, "Vienna"),
-            ("DC", 50.040750, 15.776590, "Pardubice"),
-            ("DC", 50.954468, 1.862801, "Calais"),
-            ("DC", 56.946285, 24.105078, "Riga"),
-            ("DC", 36.168056, -5.348611, "Algeciras"),
-            ("Retail", 50.935173, 6.953101, "Cologne"),
-            ("Retail", 51.219890, 4.403460, "Antwerp"),
-            ("Retail", 50.061430, 19.936580, "Krakow"),
-            ("Retail", 54.902720, 23.909610, "Kaunas"),
-            ("Retail", 59.911491, 10.757933, "Oslo"),
-            ("Retail", 53.350140, -6.266155, "Dublin"),
-            ("Retail", 59.329440, 18.068610, "Stockholm"),
+            ("Distribution Center", 50.040750, 15.776590, "Pardubice"),
+            ("Distribution Center", 50.954468, 1.862801, "Calais"),
+            ("Distribution Center", 56.946285, 24.105078, "Riga"),
+            ("Distribution Center", 36.168056, -5.348611, "Algeciras"),
+            ("Retail Hub", 50.935173, 6.953101, "Cologne"),
+            ("Retail Hub", 51.219890, 4.403460, "Antwerp"),
+            ("Retail Hub", 50.061430, 19.936580, "Krakow"),
+            ("Retail Hub", 54.902720, 23.909610, "Kaunas"),
+            ("Retail Hub", 59.911491, 10.757933, "Oslo"),
+            ("Retail Hub", 53.350140, -6.266155, "Dublin"),
+            ("Retail Hub", 59.329440, 18.068610, "Stockholm"),
         ]
 
         # Filter nodes to selected facilities (Retail always shown)
         selected_cities = set((plants or []) + (crossdocks or []) + (dcs or []))
-        base_nodes = [n for n in nodes if (n[3] in selected_cities) or (n[0] == "Retail")]
+        base_nodes = [n for n in nodes if (n[3] in selected_cities) or (n[0] == "Retail Hub")]
 
         # Add selected new facilities (only if produced > 0)
         facility_coords = {
@@ -1421,7 +1420,7 @@ def _render_puzzle_mode():
         prod_src = results.get("puzzle_prod_sources_units", {})
         for name, (lat, lon, city) in facility_coords.items():
             if name in (new_locs or []) and float(prod_src.get(name, 0.0)) > 1e-6:
-                base_nodes.append(("New Production Facility", lat, lon, city))
+                base_nodes.append(("Alternative Production Facility", lat, lon, city))
 
         locations = pd.DataFrame(base_nodes, columns=["Type", "Lat", "Lon", "City"])
 
@@ -1441,11 +1440,11 @@ def _render_puzzle_mode():
             locations = pd.concat([locations, df_events], ignore_index=True)
 
         color_map = {
-            "Plant": "#8E24AA",
+            "Manufacturer": "#8E24AA",
             "Cross-dock": "#4285F4",
             "DC": "#000000",
-            "Retail": "#EA4335",
-            "New Production Facility": "#4FC3F7",
+            "Retail Hub": "#EA4335",
+            "Alternative Production Facility": "#4FC3F7",
             "Event: Suez Canal Blockade": "gold",
             "Event: Volcano Eruption": "orange",
             "Event: Oil Crisis": "brown",
@@ -1453,11 +1452,11 @@ def _render_puzzle_mode():
         }
 
         size_map = {
-            "Plant": 15,
+            "Manufacturer": 15,
             "Cross-dock": 14,
             "DC": 16,
-            "Retail": 20,
-            "New Production Facility": 14,
+            "Retail Hub": 20,
+            "Alternative Production Facility": 14,
             "Event: Suez Canal Blockade": 18,
             "Event: Volcano Eruption": 18,
             "Event: Oil Crisis": 18,
@@ -1474,7 +1473,6 @@ def _render_puzzle_mode():
             color_discrete_map=color_map,
             projection="natural earth",
             scope="world",
-            title="Global Supply Chain Structure",
         )
 
         for trace in fig_map.data:
@@ -1609,7 +1607,7 @@ def _render_puzzle_mode():
             st.metric("🚢 Water", f"{flows['L2_new']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L2_new']['road']:,.0f}")
         with cL3:
-            st.caption("DCs → Retailer Hub")
+            st.caption("DCs → Retail Hub")
             st.metric("✈️ Air", f"{flows['L3']['air']:,.0f}")
             st.metric("🚢 Water", f"{flows['L3']['Water']:,.0f}")
             st.metric("🚛 Road", f"{flows['L3']['road']:,.0f}")
@@ -2098,7 +2096,6 @@ if st.button("Run Optimization"):
                 color_discrete_map=color_map,
                 projection="natural earth",
                 scope="world",
-                title="Global Supply Chain Structure",
             )
             
             # compute activity once
@@ -2442,7 +2439,6 @@ if st.button("Run Optimization"):
                         color_discrete_map=color_map,
                         projection="natural earth",
                         scope="world",
-                        title="Global Supply Chain Structure ",
                     )
 
                     for trace in fig_map.data:

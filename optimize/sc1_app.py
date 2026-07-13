@@ -998,8 +998,8 @@ def run_sc1():
     # ----------------------------------------------------
     st.markdown("## 🌍 Global Supply Chain Network")
     
-    plants = pd.DataFrame({
-    "Type": ["Plant", "Plant"],
+    manufacturers = pd.DataFrame({
+    "Type": ["Manufacturer", "Manufacturer"],
     "Lat": [31.230416, 23.553100],
     "Lon": [121.473701, 121.021100]
     })
@@ -1017,18 +1017,18 @@ def run_sc1():
     })
 
     retailers = pd.DataFrame({
-        "Type": ["Retailer Hub"] * 7,
+        "Type": ["Retail Hub"] * 7,
         "Lat": [50.935173, 51.219890, 50.061430, 54.902720, 59.911491, 53.350140, 59.329440],
         "Lon": [6.953101, 4.403460, 19.936580, 23.909610, 10.757933, -6.266155, 18.068610]
     })
 
     
-    locations = pd.concat([plants, crossdocks, dcs, retailers])
+    locations = pd.concat([manufacturers, crossdocks, dcs, retailers])
     color_map = {
-        "Plant": "#8E24AA",
+        "Manufacturer": "#8E24AA",
         "Cross-dock": "#4285F4",
         "Distribution Center": "#000000",
-        "Retailer Hub": "#EA4335",
+        "Retail Hub": "#EA4335",
     }
     
     fig_map = px.scatter_geo(
@@ -1039,7 +1039,6 @@ def run_sc1():
         color_discrete_map=color_map,
         projection="natural earth",
         scope="world",
-        title="Global Supply Chain Structure",
         template="plotly_white"
     )
     
@@ -1112,7 +1111,7 @@ def run_sc1():
     st.markdown("---")
 
     # --- Layer 3: DCs → Retailer Hubs ---
-    st.markdown("### DCs → Retailer Hub")
+    st.markdown("### DCs → Retail Hubs")
     col1, col2, col3 = st.columns(3)
     l3_water = get_value_safe_any(L3_WATER)
     l3_air = get_value_safe_any(L3_AIR)
