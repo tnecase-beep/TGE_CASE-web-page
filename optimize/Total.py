@@ -2348,22 +2348,22 @@ if st.button("Run Optimization"):
                     st.markdown("## 🌍 Global Supply Chain Network ")
 
                     nodes = [
-                    ("Plant", 31.230416, 121.473701, "Shanghai"),
-                    ("Plant", 23.553100, 121.021100, "Taiwan"),
+                    ("Manufacturer", 31.230416, 121.473701, "Shanghai"),
+                    ("Manufacturer", 23.553100, 121.021100, "Taiwan"),
                     ("Cross-dock", 48.856610, 2.352220, "Paris"),
                     ("Cross-dock", 54.352100, 18.646400, "Gdansk"),
                     ("Cross-dock", 48.208500, 16.372100, "Vienna"),
-                    ("DC", 50.040750, 15.776590, "Pardubice"),
-                    ("DC", 50.629250, 3.057256, "Calais"),
-                    ("DC", 56.946285, 24.105078, "Riga"),
-                    ("DC", 36.168056, -5.348611, "Algeciras"),
-                    ("Retail", 50.935173, 6.953101, "Cologne"),
-                    ("Retail", 51.219890, 4.403460, "Antwerp"),
-                    ("Retail", 50.061430, 19.936580, "Krakow"),
-                    ("Retail", 54.902720, 23.909610, "Kaunas"),
-                    ("Retail", 59.911491, 10.757933, "Oslo"),
-                    ("Retail", 53.350140, -6.266155, "Dublin"),
-                    ("Retail", 59.329440, 18.068610, "Stockholm"),
+                    ("Distribution Center", 50.040750, 15.776590, "Pardubice"),
+                    ("Distribution Center", 50.629250, 3.057256, "Calais"),
+                    ("Distribution Center", 56.946285, 24.105078, "Riga"),
+                    ("Distribution Center", 36.168056, -5.348611, "Algeciras"),
+                    ("Retail Hub", 50.935173, 6.953101, "Cologne"),
+                    ("Retail Hub", 51.219890, 4.403460, "Antwerp"),
+                    ("Retail Hub", 50.061430, 19.936580, "Krakow"),
+                    ("Retail Hub", 54.902720, 23.909610, "Kaunas"),
+                    ("Retail Hub", 59.911491, 10.757933, "Oslo"),
+                    ("Retail Hub", 53.350140, -6.266155, "Dublin"),
+                    ("Retail Hub", 59.329440, 18.068610, "Stockholm"),
                     ]
 
                     # Add new facilities from fallback model
@@ -2406,11 +2406,11 @@ if st.button("Run Optimization"):
                         locations = pd.concat([locations, df_events], ignore_index=True)
 
                     color_map = {
-                        "Plant": "#8E24AA",
+                        "Manufacturer": "#8E24AA",
                         "Cross-dock": "#4285F4",
-                        "DC": "#000000",
-                        "Retail": "#EA4335",
-                        "New Production Facility": "#4FC3F7",
+                        "Distribution Center": "#000000",
+                        "Retail Hub": "#EA4335",
+                        "Alternative Production Facility": "#4FC3F7",
                         "Event: Suez Canal Blockade": "gold",
                         "Event: Volcano Eruption": "orange",
                         "Event: Oil Crisis": "brown",
@@ -2418,11 +2418,11 @@ if st.button("Run Optimization"):
                     }
 
                     size_map = {
-                        "Plant": 15,
+                        "Manufacturer": 15,
                         "Cross-dock": 14,
-                        "DC": 16,
-                        "Retail": 20,
-                        "New Production Facility": 14,
+                        "Distribution Center": 16,
+                        "Retail Hub": 20,
+                        "Alternative Production Facility": 14,
                         "Event: Suez Canal Blockade": 18,
                         "Event: Volcano Eruption": 18,
                         "Event: Oil Crisis": 18,
