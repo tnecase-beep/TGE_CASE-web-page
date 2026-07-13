@@ -445,7 +445,7 @@ def display_layer_summary_model(model, title: str, prefix: str, include_road: bo
 
 def render_transport_flows_by_mode(model):
     st.markdown("## 🚚 Transport Flows by Mode")
-    display_layer_summary_model(model, "Plants → Cross-docks", "f1", include_road=False)
+    display_layer_summary_model(model, "Manufacturers → Cross-docks", "f1", include_road=False)
     display_layer_summary_model(model, "Cross-docks → DCs", "f2", include_road=True)
     display_layer_summary_model(model, "Alternative Production Facilities → DCs", "f2_2", include_road=True)
     display_layer_summary_model(model, "DCs → Retail Hubs", "f3", include_road=True)
@@ -1223,7 +1223,7 @@ def _render_puzzle_mode():
     st.markdown("#### Transport mode shares")
     st.caption("Defaults: L1 Water=50% (air remainder), L2 Water=50% & air=50% (road remainder), L3 Water=50% & air=25% (road remainder). Shares are set in **percent (%).**")
 
-    st.markdown("**Plant → Cross-dock**")
+    st.markdown("**Manufacturers → Cross-docks**")
     l1_mode_share_by_plant = {}
     for p in plants:
         Water_pct = st.slider(f"{p} – Water share (L1) (%)", 0, 100, 50, 1, key=f"pz_l1_Water_{p}")
@@ -1235,7 +1235,7 @@ def _render_puzzle_mode():
         Water = float(Water_pct) / 100.0
         l1_mode_share_by_plant[p] = {"Water": float(Water)}
 
-    st.markdown("**Cross-dock / New → DC**")
+    st.markdown("**Cross-docks/Alternatives production facilities → DCs**")
     l2_mode_share_by_origin = {}
     for o in list(crossdocks) + list(new_locs):
         with st.expander(f"{o}", expanded=False):
@@ -1258,7 +1258,7 @@ def _render_puzzle_mode():
             air = float(air_pct) / 100.0
             l2_mode_share_by_origin[o] = {"Water": float(Water), "air": float(air)}
 
-    st.markdown("**DC → Retailer**")
+    st.markdown("**DCs → Retail Hubs**")
     l3_mode_share_by_dc = {}
     for d in list(dcs):
         with st.expander(f"{d}", expanded=False):
