@@ -1032,7 +1032,8 @@ def run_sc1():
     manufacturers = _nodes_df("Manufacturer", manufacturer_coords, lambda p: _flow_sum(f"f1[{p},") > FLOW_EPS)
     crossdocks = _nodes_df("Cross-dock", crossdock_coords, lambda c: _flow_sum(f"f2[{c},") > FLOW_EPS)
     dcs = _nodes_df("Distribution Center", dc_coords, lambda d: _flow_sum(f"f3[{d},") > FLOW_EPS)
-    retailers = _nodes_df("Retail Hub", retailer_coords, lambda r: _flow_sum("f3[", mid=r) > FLOW_EPS)
+    # Retail hubs are demand points: always shown regardless of flows.
+    retailers = _nodes_df("Retail Hub", retailer_coords, lambda r: True)
 
     locations = pd.concat([manufacturers, crossdocks, dcs, retailers])
     color_map = {
