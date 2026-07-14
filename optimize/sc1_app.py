@@ -998,31 +998,42 @@ def run_sc1():
     # ----------------------------------------------------
     st.markdown("## 🌍 Global Supply Chain Network")
     
-    manufacturers = pd.DataFrame({
-    "Type": ["Manufacturer", "Manufacturer"],
-    "Lat": [31.230416, 23.553100],
-    "Lon": [121.473701, 121.021100]
-    })
+    manufacturer_coords = {"Shanghai": (31.230416, 121.473701), "Taiwan": (23.553100, 121.021100)}
+    crossdock_coords = {"Paris": (48.856610, 2.352220), "Gdansk": (54.352100, 18.646400), "Vienna": (48.208500, 16.372100)}
+    dc_coords = {"Pardubice": (50.040750, 15.776590), "Calais": (50.629250, 3.057256), "Riga": (56.946285, 24.105078), "Algeciras": (36.168056, -5.348611)}
+    retailer_coords = {"Cologne": (50.935173, 6.953101), "Antwerp": (51.219890, 4.403460), "Krakow": (50.061430, 19.936580), "Kaunas": (54.902720, 23.909610), "Oslo": (59.911491, 10.757933), "Dublin": (53.350140, -6.266155), "Stockholm": (59.329440, 18.068610)}
 
-    crossdocks = pd.DataFrame({
-        "Type": ["Cross-dock"] * 3,
-        "Lat": [48.856610, 54.352100, 48.208500],
-        "Lon": [2.352220, 18.646400, 16.372100]
-    })
+    # Only facilities with non-zero flow in the selected scenario are shown.
+    # Flow columns (f1/f2/f3) live on the Demand_* sheet row; if unavailable, show everything.
+    _flow_row = closest_demand
+    _has_flow_cols = _flow_row is not None and any(str(c).startswith("f1[") for c in _flow_row.index)
 
-    dcs = pd.DataFrame({
-        "Type": ["Distribution Center"] * 4,
-        "Lat": [50.040750, 50.629250, 56.946285, 36.168056],
-        "Lon": [15.776590, 3.057256, 24.105078, -5.348611]
-    })
+    def _flow_sum(prefix, mid=None):
+        total = 0.0
+        for c in _flow_row.index:
+            name = str(c)
+            if not name.startswith(prefix):
+                continue
+            if mid is not None and f",{mid}," not in name:
+                continue
+            total += _safe_float_local(_flow_row.get(c))
+        return total
 
-    retailers = pd.DataFrame({
-        "Type": ["Retail Hub"] * 7,
-        "Lat": [50.935173, 51.219890, 50.061430, 54.902720, 59.911491, 53.350140, 59.329440],
-        "Lon": [6.953101, 4.403460, 19.936580, 23.909610, 10.757933, -6.266155, 18.068610]
-    })
+    FLOW_EPS = 1e-6
 
-    
+    def _nodes_df(node_type, coords, is_active):
+        rows = [
+            (node_type, lat, lon, name)
+            for name, (lat, lon) in coords.items()
+            if (not _has_flow_cols) or is_active(name)
+        ]
+        return pd.DataFrame(rows, columns=["Type", "Lat", "Lon", "Name"])
+
+    manufacturers = _nodes_df("Manufacturer", manufacturer_coords, lambda p: _flow_sum(f"f1[{p},") > FLOW_EPS)
+    crossdocks = _nodes_df("Cross-dock", crossdock_coords, lambda c: _flow_sum(f"f2[{c},") > FLOW_EPS)
+    dcs = _nodes_df("Distribution Center", dc_coords, lambda d: _flow_sum(f"f3[{d},") > FLOW_EPS)
+    retailers = _nodes_df("Retail Hub", retailer_coords, lambda r: _flow_sum("f3[", mid=r) > FLOW_EPS)
+
     locations = pd.concat([manufacturers, crossdocks, dcs, retailers])
     color_map = {
         "Manufacturer": "#8E24AA",
@@ -1037,6 +1048,7 @@ def run_sc1():
         lon="Lon",
         color="Type",
         color_discrete_map=color_map,
+        hover_name="Name",
         projection="natural earth",
         scope="world",
         template="plotly_white"

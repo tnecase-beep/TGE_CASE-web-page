@@ -999,65 +999,40 @@ def run_sc2():
     # ----------------------------------------------------
     st.markdown("## 🌍 Global Supply Chain Network")
     
-    # --- Manufacturers (f1, China region) ---
-    manufacturers = pd.DataFrame({
-    "Type": ["Manufacturer", "Manufacturer"],
-    "Lat": [31.230416, 23.553100],
-    "Lon": [121.473701, 121.021100]
-    })
+    manufacturer_coords = {"Shanghai": (31.230416, 121.473701), "Taiwan": (23.553100, 121.021100)}
+    crossdock_coords = {"Paris": (48.856610, 2.352220), "Gdansk": (54.352100, 18.646400), "Vienna": (48.208500, 16.372100)}
+    dc_coords = {"Pardubice": (50.040750, 15.776590), "Calais": (50.954468, 1.862801), "Riga": (56.946285, 24.105078), "Algeciras": (36.168056, -5.348611)}
+    retailer_coords = {"Cologne": (50.935173, 6.953101), "Antwerp": (51.219890, 4.403460), "Krakow": (50.061430, 19.936580), "Kaunas": (54.902720, 23.909610), "Oslo": (59.911491, 10.757933), "Dublin": (53.350140, -6.266155), "Stockholm": (59.329440, 18.068610)}
+    new_facility_coords = {"Budapest": (47.497913, 19.040236), "Prague": (50.088040, 14.420760), "Cork": (51.898514, -8.475604), "Helsinki": (60.169520, 24.935450), "Warsaw": (52.229770, 21.011780)}
 
-    crossdocks = pd.DataFrame({
-        "Type": ["Cross-dock"] * 3,
-        "Lat": [48.856610, 54.352100, 48.208500],
-        "Lon": [2.352220, 18.646400, 16.372100]
-    })
+    # Only facilities with non-zero flow in the selected scenario are shown.
+    def _flow_sum(prefix, mid=None):
+        total = 0.0
+        for c in closest.index:
+            name = str(c)
+            if not name.startswith(prefix):
+                continue
+            if mid is not None and f",{mid}," not in name:
+                continue
+            total += _safe_float(closest.get(c))
+        return total
 
-    dcs = pd.DataFrame({
-        "Type": ["Distribution Center"] * 4,
-        "Lat": [50.040750, 50.954468, 56.946285, 36.168056],
-        "Lon": [15.776590, 1.862801, 24.105078, -5.348611]
-    })
+    FLOW_EPS = 1e-6
 
-    retailers = pd.DataFrame({
-        "Type": ["Retail Hub"] * 7,
-        "Lat": [50.935173, 51.219890, 50.061430, 54.902720, 59.911491, 53.350140, 59.329440],
-        "Lon": [6.953101, 4.403460, 19.936580, 23.909610, 10.757933, -6.266155, 18.068610]
-    })
+    def _nodes_df(node_type, coords, is_active):
+        rows = [(node_type, lat, lon, name) for name, (lat, lon) in coords.items() if is_active(name)]
+        return pd.DataFrame(rows, columns=["Type", "Lat", "Lon", "Name"])
 
-    
-    # --- New Production Facilities (f2_2) ---
-    f2_2_cols = [c for c in closest.index if c.startswith("f2_2_bin")]
-    
-    # Define coordinates (one per possible facility)
-    facility_coords = {
-    "f2_2_bin[Budapest]": (47.497913, 19.040236),   # Budapest
-    "f2_2_bin[Prague]": (50.088040, 14.420760),   # Prague
-    "f2_2_bin[Cork]": (51.898514, -8.475604),   # Cork
-    "f2_2_bin[Helsinki]": (60.169520, 24.935450),   # Helsinki
-    "f2_2_bin[Warsaw]": (52.229770, 21.011780),   # Warsaw
-    }
+    manufacturers = _nodes_df("Manufacturer", manufacturer_coords, lambda p: _flow_sum(f"f1[{p},") > FLOW_EPS)
+    crossdocks = _nodes_df("Cross-dock", crossdock_coords, lambda c: _flow_sum(f"f2[{c},") > FLOW_EPS)
+    dcs = _nodes_df("Distribution Center", dc_coords, lambda d: _flow_sum(f"f3[{d},") > FLOW_EPS)
+    retailers = _nodes_df("Retail Hub", retailer_coords, lambda r: _flow_sum("f3[", mid=r) > FLOW_EPS)
+    new_facilities = _nodes_df(
+        "Alternative Production Facility",
+        new_facility_coords,
+        lambda n: _safe_float(closest.get(f"f2_2_bin[{n}]")) > 0.5 and _flow_sum(f"f2_2[{n},") > FLOW_EPS,
+    )
 
-    
-    active_facilities = []
-    for col in f2_2_cols:
-        try:
-            val = float(closest[col])
-            if val > 0.5 and col in facility_coords:
-                lat, lon = facility_coords[col]
-                active_facilities.append((col, lat, lon))
-        except Exception:
-            continue
-    
-    if active_facilities:
-        new_facilities = pd.DataFrame({
-            "Type": "Alternative Production Facility",
-            "Lat": [lat for _, lat, _ in active_facilities],
-            "Lon": [lon for _, _, lon in active_facilities],
-            "Name": [col for col, _, _ in active_facilities]
-        })
-    else:
-        new_facilities = pd.DataFrame(columns=["Type", "Lat", "Lon", "Name"])
-        
     # --- Combine all ---
     locations = pd.concat([manufacturers, crossdocks, dcs, retailers, new_facilities])
     
@@ -1085,7 +1060,7 @@ def run_sc2():
         lon="Lon",
         color="Type",
         color_discrete_map=color_map,
-        hover_name="Type",
+        hover_name="Name",
         projection="natural earth",
         scope="world",
         template="plotly_white"
