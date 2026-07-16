@@ -769,7 +769,7 @@ def run_sc2():
                 "Air": e_air,
                 "Water": e_water,
                 "Road": e_road,
-                "Total Transport": total_transport,
+                "Total Transportation": total_transport,
             }
 
             df_emission = pd.DataFrame({

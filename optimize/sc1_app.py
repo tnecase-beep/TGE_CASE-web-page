@@ -774,7 +774,7 @@ def run_sc1():
             for name, keys in emission_aliases.items()
         }
 
-        emission_data["Total Transport"] = (
+        emission_data["Total Transportation"] = (
             emission_data.get("Air", 0) + emission_data.get("Water", 0) + emission_data.get("Road", 0)
         )
 
