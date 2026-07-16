@@ -446,8 +446,8 @@ def run_sc2():
     
     col1.metric("Total Cost (€)", f"{closest['Objective_value']:,.0f}")
     col2.metric("Total CO₂", f"{closest['CO2_Total']:,.2f}")
-    col3.metric("Inventory Total (€)", f"{closest[['Inventory_L1','Inventory_L2','Inventory_L3']].sum():,.0f}")
-    col4.metric("Transport Total (€)", f"{(closest[['Transport_L1','Transport_L2','Transport_L3']].sum() + closest.get('Transport_L2_new', 0) + (6.25 * float(closest.get('Satisfied_Demand_units', 0)))):,.0f}")
+    col3.metric("Inventory Total (€)", f"{closest[['Inventory_L1','Inventory_L2','Inventory_L2_new','Inventory_L3']].sum():,.0f}")
+    col4.metric("Transportation Total (€)", f"{(closest[['Transport_L1','Transport_L2','Transport_L3']].sum() + closest.get('Transport_L2_new', 0) + (6.25 * float(closest.get('Satisfied_Demand_units', 0)))):,.0f}")
 
 
     # ----------------------------------------------------
@@ -578,8 +578,8 @@ def run_sc2():
     # Let user choose which cost metric to plot
     cost_metric_map = {
         "Total Cost (€)": "Objective_value",
-        "Inventory Cost (€)": ["Inventory_L1", "Inventory_L2", "Inventory_L3"],
-        "Transport Cost (€)": ["Transport_L1", "Transport_L2", "Transport_L2_new", "Transport_L3"],
+        "Inventory Cost (€)": ["Inventory_L1", "Inventory_L2", "Inventory_L2_new", "Inventory_L3"],
+        "Transportation Cost (€)": ["Transport_L1", "Transport_L2", "Transport_L2_new", "Transport_L3"],
     }
     
     selected_metric_label = st.selectbox(
@@ -593,7 +593,7 @@ def run_sc2():
     filtered = pool.copy()
     if isinstance(cost_metric_map[selected_metric_label], list):
         filtered["Selected_Cost"] = filtered[cost_metric_map[selected_metric_label]].sum(axis=1)
-        if selected_metric_label == "Transport Cost (€)":
+        if selected_metric_label == "Transportation Cost (€)":
             filtered["Selected_Cost"] += 6.25 * pd.to_numeric(filtered["Satisfied_Demand_units"], errors="coerce").fillna(0)
         y_label = selected_metric_label
     else:
@@ -634,7 +634,7 @@ def run_sc2():
         # Highlight current scenario
         if isinstance(cost_metric_map[selected_metric_label], list):
             closest_y = closest[cost_metric_map[selected_metric_label]].sum()
-            if selected_metric_label == "Transport Cost (€)":
+            if selected_metric_label == "Transportation Cost (€)":
                 closest_y += 6.25 * float(closest.get("Satisfied_Demand_units", 0))
         else:
             closest_y = closest[cost_metric_map[selected_metric_label]]
@@ -1092,7 +1092,7 @@ def run_sc2():
     # ----------------------------------------------------
     # 🚢✈️🚛 FLOW SUMMARY BY MODE PER LAYER (f1, f2, f2_2, f3)
     # ----------------------------------------------------
-    st.markdown("## 🚚 Transport Flows by Mode")
+    st.markdown("## 🚚 Transportation Flows by Mode")
     
     import re
     

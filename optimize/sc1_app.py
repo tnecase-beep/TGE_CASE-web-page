@@ -516,7 +516,7 @@ def run_sc1():
         tr_total = None
     
     col3.metric("Inventory Total (€)", f"{inv_total:,.0f}" if inv_total is not None else "N/A")
-    col4.metric("Transport Total (€)", f"{tr_total:,.0f}" if tr_total is not None else "N/A")
+    col4.metric("Transportation Total (€)", f"{tr_total:,.0f}" if tr_total is not None else "N/A")
 
     # ----------------------------------------------------
     # 🆕 COST vs EMISSIONS DUAL-AXIS BAR-LINE PLOT (DYNAMIC)
@@ -608,7 +608,7 @@ def run_sc1():
             if any(c in df.columns for c in ["Inventory_L1", "Inventory_L2", "Inventory_L3"])
             else ["Transit Inventory Cost"]
         ),
-        "Transport Cost (€)": (
+        "Transportation Cost (€)": (
             ["Transport_L1", "Transport_L2", "Transport_L3"]
             if any(c in df.columns for c in ["Transport_L1", "Transport_L2", "Transport_L3"])
             else ["Transportation Cost"]
@@ -629,7 +629,7 @@ def run_sc1():
         cols_to_sum = [c for c in metric_cols if c in filtered.columns]
         if cols_to_sum:
             filtered["Selected_Cost"] = filtered[cols_to_sum].sum(axis=1)
-            if selected_metric_label.startswith("Transport Cost"):
+            if selected_metric_label.startswith("Transportation Cost"):
                 filtered["Selected_Cost"] += 6.25 * pd.to_numeric(
                     filtered["Satisfied_Demand_units"] if "Satisfied_Demand_units" in filtered.columns else filtered["DemandFulfillment"],
                     errors="coerce"
@@ -663,7 +663,7 @@ def run_sc1():
         if isinstance(metric_cols, list):
             cols_to_sum = [c for c in metric_cols if c in closest.index]
             closest_y = closest[cols_to_sum].sum()
-            if selected_metric_label.startswith("Transport Cost"):
+            if selected_metric_label.startswith("Transportation Cost"):
                 closest_y += 6.25 * float(closest.get("Satisfied_Demand_units", closest.get("DemandFulfillment", 0)))
         else:
             closest_y = closest.get(metric_cols, 0)
@@ -1071,7 +1071,7 @@ def run_sc1():
     # ----------------------------------------------------
     # 🚢✈️🚛 FLOW SUMMARY (using LayerX naming)
     # ----------------------------------------------------
-    st.markdown("## 🚚 Transport Flows by Mode")
+    st.markdown("## 🚚 Transportation Flows by Mode")
 
     # --- Helper: read a value from the scenario row using multiple possible column names ---
     def get_value_safe_any(keys):
