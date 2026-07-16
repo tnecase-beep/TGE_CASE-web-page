@@ -444,7 +444,7 @@ def display_layer_summary_model(model, title: str, prefix: str, include_road: bo
 
 
 def render_transport_flows_by_mode(model):
-    st.markdown("## 🚚 Transport Flows by Mode")
+    st.markdown("## 🚚 Transportation Flows by Mode")
     display_layer_summary_model(model, "Manufacturers → Cross-docks", "f1", include_road=False)
     display_layer_summary_model(model, "Cross-docks → DCs", "f2", include_road=True)
     display_layer_summary_model(model, "Alternative Production Facilities → DCs", "f2_2", include_road=True)
@@ -557,7 +557,7 @@ def render_cost_emission_distribution(results: dict):
             "Air": e_air,
             "Water": e_Water,
             "Road": e_road,
-            "Total Transport": total_transport,
+            "Total Transportation": total_transport,
         }
 
         df_emission = pd.DataFrame({
@@ -1220,7 +1220,7 @@ def _render_puzzle_mode():
 
     # Absolute unit allocation drives the solver-free puzzle computation.
     prod_source_units = dict(prod_units_by_source)
-    st.markdown("#### Transport mode shares")
+    st.markdown("#### Transportation mode shares")
     st.caption("Defaults: L1 Water=50% (air remainder), L2 Water=50% & air=50% (road remainder), L3 Water=50% & air=25% (road remainder). Shares are set in **percent (%).**")
 
     st.markdown("**Manufacturers → Cross-docks**")
@@ -1590,7 +1590,7 @@ def _render_puzzle_mode():
         viol = results.get("dc_capacity_violations", {})
 
         # Flow totals by mode
-        st.markdown("## 🚚 Transport Flows by Mode")
+        st.markdown("## 🚚 Transportation Flows by Mode")
         cL1, cL2, cL2n, cL3 = st.columns(4)
         with cL1:
             st.caption("Manufacturers -> Cross-docs")
